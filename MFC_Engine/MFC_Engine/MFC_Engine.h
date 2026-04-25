@@ -1,4 +1,4 @@
-﻿
+
 // MFC_Engine.h: MFC_Engine 애플리케이션의 기본 헤더 파일
 //
 #pragma once
@@ -24,6 +24,7 @@ public:
 public:
 	virtual BOOL InitInstance();
 	virtual int ExitInstance();
+	virtual BOOL OnIdle(LONG lCount);
 
 // 구현입니다.
 	UINT  m_nAppLook;

@@ -1,4 +1,4 @@
-﻿
+
 // MFC_EngineView.cpp: CMFCEngineView 클래스의 구현
 //
 
@@ -12,6 +12,8 @@
 
 #include "MFC_EngineDoc.h"
 #include "MFC_EngineView.h"
+#include "GraphicsEngine.h"
+#include <memory>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -29,6 +31,9 @@ BEGIN_MESSAGE_MAP(CMFCEngineView, CView)
 	ON_COMMAND(ID_FILE_PRINT_PREVIEW, &CMFCEngineView::OnFilePrintPreview)
 	ON_WM_CONTEXTMENU()
 	ON_WM_RBUTTONUP()
+	ON_WM_CREATE()
+	ON_WM_SIZE()
+	ON_WM_ERASEBKGND()
 END_MESSAGE_MAP()
 
 // CMFCEngineView 생성/소멸
@@ -60,7 +65,11 @@ void CMFCEngineView::OnDraw(CDC* /*pDC*/)
 	if (!pDoc)
 		return;
 
-	// TODO: 여기에 원시 데이터에 대한 그리기 코드를 추가합니다.
+	// DX12 렌더링 호출
+	if (m_graphicsEngine)
+	{
+		m_graphicsEngine->Render();
+	}
 }
 
 
@@ -101,6 +110,46 @@ void CMFCEngineView::OnContextMenu(CWnd* /* pWnd */, CPoint point)
 #ifndef SHARED_HANDLERS
 	theApp.GetContextMenuManager()->ShowPopupMenu(IDR_POPUP_EDIT, point.x, point.y, this, TRUE);
 #endif
+}
+
+int CMFCEngineView::OnCreate(LPCREATESTRUCT lpCreateStruct)
+{
+	if (CView::OnCreate(lpCreateStruct) == -1)
+		return -1;
+
+	// Graphics Engine 생성
+	m_graphicsEngine = std::make_unique<CGraphicsEngine>();
+
+	return 0;
+}
+
+void CMFCEngineView::OnInitialUpdate()
+{
+	CView::OnInitialUpdate();
+
+	CRect rect;
+	GetClientRect(&rect);
+
+	if (m_graphicsEngine)
+	{
+		m_graphicsEngine->Initialize(GetSafeHwnd(), rect.Width(), rect.Height());
+	}
+}
+
+void CMFCEngineView::OnSize(UINT nType, int cx, int cy)
+{
+	CView::OnSize(nType, cx, cy);
+
+	if (m_graphicsEngine)
+	{
+		m_graphicsEngine->Resize(cx, cy);
+	}
+}
+
+BOOL CMFCEngineView::OnEraseBkgnd(CDC* pDC)
+{
+	// 배경을 그리지 않음 (DX12가 채움)
+	return TRUE;
 }
 
 

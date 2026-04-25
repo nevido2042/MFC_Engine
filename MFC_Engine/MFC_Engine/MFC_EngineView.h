@@ -1,9 +1,9 @@
-﻿
 // MFC_EngineView.h: CMFCEngineView 클래스의 인터페이스
 //
 
 #pragma once
 
+class CGraphicsEngine;
 
 class CMFCEngineView : public CView
 {
@@ -17,6 +17,9 @@ public:
 
 // 작업입니다.
 public:
+
+private:
+	std::unique_ptr<CGraphicsEngine> m_graphicsEngine;
 
 // 재정의입니다.
 public:
@@ -42,7 +45,12 @@ protected:
 	afx_msg void OnFilePrintPreview();
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
+	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	DECLARE_MESSAGE_MAP()
+public:
+	virtual void OnInitialUpdate();
 };
 
 #ifndef _DEBUG  // MFC_EngineView.cpp의 디버그 버전

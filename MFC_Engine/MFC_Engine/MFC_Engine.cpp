@@ -1,4 +1,4 @@
-﻿
+
 // MFC_Engine.cpp: 애플리케이션에 대한 클래스 동작을 정의합니다.
 //
 
@@ -156,6 +156,28 @@ int CMFCEngineApp::ExitInstance()
 	AfxOleTerm(FALSE);
 
 	return CWinAppEx::ExitInstance();
+}
+
+BOOL CMFCEngineApp::OnIdle(LONG lCount)
+{
+	CWinAppEx::OnIdle(lCount);
+
+	// 메인 프레임을 통해 활성 뷰를 찾아 화면 갱신을 요청합니다.
+	CMainFrame* pFrame = (CMainFrame*)m_pMainWnd;
+	if (pFrame)
+	{
+		CFrameWnd* pActiveFrame = pFrame->GetActiveFrame();
+		if (pActiveFrame)
+		{
+			CView* pView = pActiveFrame->GetActiveView();
+			if (pView)
+			{
+				pView->Invalidate(FALSE);
+			}
+		}
+	}
+
+	return TRUE; // 더 많은 작업을 위해 TRUE 반환 (무한 루프)
 }
 
 // CMFCEngineApp 메시지 처리기
