@@ -36,6 +36,9 @@ bool CGraphicsEngine::Initialize(HWND hWnd, int width, int height)
     m_viewport = { 0.0f, 0.0f, (float)m_width, (float)m_height, 0.0f, 1.0f };
     m_scissorRect = { 0, 0, m_width, m_height };
 
+    // 타임 매니저 초기화
+    m_timeManager.Initialize();
+
     // DX12 파이프라인 구성 요소 생성 순차 실행
     CreateDevice();
     CreateCommandQueue();
@@ -158,6 +161,9 @@ void CGraphicsEngine::Render()
 {
     if (!m_isInitialized) return;
 
+    // --- 시간 업데이트 (분리된 매니저 사용) ---
+    m_timeManager.Update();
+
     // 장치 소실 여부 체크
     HRESULT hr = m_device->GetDeviceRemovedReason();
     if (FAILED(hr))
@@ -181,8 +187,6 @@ void CGraphicsEngine::Render()
     // 배경색으로 화면 지우기 (Clear)
     const float clearColor[] = { 0.2f, 0.2f, 0.3f, 1.0f };
     m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-
-    // TODO: 여기에 실제 물체(삼각형 등) 그리기 명령 추가 예정
 
     // 리소스 상태 변경: RenderTarget -> Present
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));

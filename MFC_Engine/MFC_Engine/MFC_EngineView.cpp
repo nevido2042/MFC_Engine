@@ -65,10 +65,21 @@ void CMFCEngineView::OnDraw(CDC* /*pDC*/)
 	if (!pDoc)
 		return;
 
-	// DX12 렌더링 호출
+	// Graphics Engine을 사용하여 렌더링 수행
 	if (m_graphicsEngine)
 	{
 		m_graphicsEngine->Render();
+
+		// FPS를 메인 윈도우 타이틀에 표시
+		static float lastFPS = 0.0f;
+		float currentFPS = m_graphicsEngine->GetFPS();
+		if (lastFPS != currentFPS)
+		{
+			CString strFPS;
+			strFPS.Format(_T("MFC_Engine [FPS: %.1f]"), currentFPS);
+			AfxGetMainWnd()->SetWindowText(strFPS);
+			lastFPS = currentFPS;
+		}
 	}
 }
 

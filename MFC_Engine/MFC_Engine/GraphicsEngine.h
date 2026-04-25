@@ -1,5 +1,7 @@
 #pragma once
 
+#include "TimeManager.h"
+
 /**
  * @class CGraphicsEngine
  * @brief DirectX 12 기반의 그래픽 렌더링 핵심 엔진 클래스입니다.
@@ -24,6 +26,9 @@ public:
     
     /** @brief 윈도우 크기 변경 시 스왑체인 버퍼 재구축 */
     void Resize(int width, int height);
+
+    /** @brief 현재 FPS 반환 (TimeManager 위임) */
+    float GetFPS() const { return m_timeManager.GetFPS(); }
 
 private:
     // --- 초기화 내부 함수 ---
@@ -60,4 +65,7 @@ private:
     bool m_isInitialized;               // 엔진 초기화 여부 플래그
     int m_width;                        // 화면 너비
     int m_height;                       // 화면 높이
+
+    // --- 매니저 객체 분리 ---
+    CTimeManager m_timeManager;         // 시간 및 FPS 관리자
 };
