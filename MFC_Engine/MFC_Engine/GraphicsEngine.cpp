@@ -1,5 +1,10 @@
 #include "pch.h"
+#include "d3dx12.h"
 #include "GraphicsEngine.h"
+#include <d3dcompiler.h>
+
+// 쉐이더 컴파일 라이브러리 링크
+#pragma comment(lib, "d3dcompiler.lib")
 
 CGraphicsEngine::CGraphicsEngine()
     : m_frameIndex(0)
@@ -47,8 +52,13 @@ bool CGraphicsEngine::Initialize(HWND hWnd, int width, int height)
     CreateRenderTargets();
     CreateCommandAllocator();
 
+    // --- 삼각형 렌더링을 위한 파이프라인 구축 ---
+    CreateRootSignature();
+    CreatePipelineState();
+    CreateVertexBuffer();
+
     // 초기 명령 리스트 생성 및 닫기
-    ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
+    ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
     m_commandList->Close();
 
     // 동기화를 위한 펜스 객체 생성
@@ -137,12 +147,13 @@ void CGraphicsEngine::CreateDescriptorHeaps()
  */
 void CGraphicsEngine::CreateRenderTargets()
 {
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
+    // 수동으로 힙 핸들 계산 (d3dx12 보조 없이)
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
     for (UINT n = 0; n < FrameCount; n++)
     {
         ThrowIfFailed(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
         m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
-        rtvHandle.Offset(1, m_rtvDescriptorSize);
+        rtvHandle.ptr += m_rtvDescriptorSize;
     }
 }
 
@@ -155,74 +166,216 @@ void CGraphicsEngine::CreateCommandAllocator()
 }
 
 /**
+ * @brief 쉐이더 자원 바인딩을 위한 루트 시그니처를 생성합니다.
+ */
+void CGraphicsEngine::CreateRootSignature()
+{
+    // 기본 루트 시그니처 구조체 직접 작성
+    D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
+    rootSignatureDesc.NumParameters = 0;
+    rootSignatureDesc.pParameters = nullptr;
+    rootSignatureDesc.NumStaticSamplers = 0;
+    rootSignatureDesc.pStaticSamplers = nullptr;
+    rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+    ComPtr<ID3DBlob> signature;
+    ComPtr<ID3DBlob> error;
+    ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+    ThrowIfFailed(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)));
+}
+
+/**
+ * @brief 그래픽 파이프라인 상태 객체(PSO)를 생성합니다.
+ */
+void CGraphicsEngine::CreatePipelineState()
+{
+    ComPtr<ID3DBlob> vertexShader;
+    ComPtr<ID3DBlob> pixelShader;
+
+#if defined(_DEBUG)
+    UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+    UINT compileFlags = 0;
+#endif
+
+    // 쉐이더 파일 컴파일
+    ThrowIfFailed(D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
+    ThrowIfFailed(D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+
+    // 입력 레이아웃 정의
+    D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+    };
+
+    // 파이프라인 상태 객체(PSO) 상세 설정 (Raw Struct 직접 채우기)
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+    psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
+    psoDesc.pRootSignature = m_rootSignature.Get();
+    psoDesc.VS = { vertexShader->GetBufferPointer(), vertexShader->GetBufferSize() };
+    psoDesc.PS = { pixelShader->GetBufferPointer(), pixelShader->GetBufferSize() };
+    
+    // 기본 래스터라이저 설정
+    psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+    psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+    psoDesc.RasterizerState.FrontCounterClockwise = FALSE;
+    psoDesc.RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+    psoDesc.RasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+    psoDesc.RasterizerState.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+    psoDesc.RasterizerState.DepthClipEnable = TRUE;
+    psoDesc.RasterizerState.MultisampleEnable = FALSE;
+    psoDesc.RasterizerState.AntialiasedLineEnable = FALSE;
+    psoDesc.RasterizerState.ForcedSampleCount = 0;
+    psoDesc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+    // 기본 블렌드 설정
+    psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
+    psoDesc.BlendState.IndependentBlendEnable = FALSE;
+    const D3D12_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
+    {
+        FALSE,FALSE,
+        D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+        D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+        D3D12_LOGIC_OP_NOOP,
+        D3D12_COLOR_WRITE_ENABLE_ALL,
+    };
+    for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
+        psoDesc.BlendState.RenderTarget[i] = defaultRenderTargetBlendDesc;
+
+    psoDesc.DepthStencilState.DepthEnable = FALSE;
+    psoDesc.DepthStencilState.StencilEnable = FALSE;
+    psoDesc.SampleMask = UINT_MAX;
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    psoDesc.NumRenderTargets = 1;
+    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.SampleDesc.Count = 1;
+
+    ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
+}
+
+/**
+ * @brief 삼각형 정점 데이터를 GPU 업로드 힙에 생성합니다.
+ */
+void CGraphicsEngine::CreateVertexBuffer()
+{
+    Vertex triangleVertices[] =
+    {
+        { { 0.0f, 0.25f * m_height / m_width, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+        { { 0.25f, -0.25f * m_height / m_width, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+        { { -0.25f, -0.25f * m_height / m_width, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } }
+    };
+
+    const UINT vertexBufferSize = sizeof(triangleVertices);
+
+    // Heap Properties 직접 설정
+    D3D12_HEAP_PROPERTIES heapProps = {};
+    heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
+    heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heapProps.CreationNodeMask = 1;
+    heapProps.VisibleNodeMask = 1;
+
+    // Resource Desc 직접 설정
+    D3D12_RESOURCE_DESC resDesc = {};
+    resDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    resDesc.Alignment = 0;
+    resDesc.Width = vertexBufferSize;
+    resDesc.Height = 1;
+    resDesc.DepthOrArraySize = 1;
+    resDesc.MipLevels = 1;
+    resDesc.Format = DXGI_FORMAT_UNKNOWN;
+    resDesc.SampleDesc.Count = 1;
+    resDesc.SampleDesc.Quality = 0;
+    resDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    resDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+    ThrowIfFailed(m_device->CreateCommittedResource(
+        &heapProps,
+        D3D12_HEAP_FLAG_NONE,
+        &resDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(&m_vertexBuffer)));
+
+    UINT8* pVertexDataBegin;
+    D3D12_RANGE readRange = { 0, 0 };
+    ThrowIfFailed(m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+    memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
+    m_vertexBuffer->Unmap(0, nullptr);
+
+    m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
+    m_vertexBufferView.StrideInBytes = sizeof(Vertex);
+    m_vertexBufferView.SizeInBytes = vertexBufferSize;
+}
+
+/**
  * @brief 실시간 렌더링 루프를 수행합니다.
  */
 void CGraphicsEngine::Render()
 {
     if (!m_isInitialized) return;
 
-    // --- 시간 업데이트 (분리된 매니저 사용) ---
     m_timeManager.Update();
 
-    // 장치 소실 여부 체크
     HRESULT hr = m_device->GetDeviceRemovedReason();
-    if (FAILED(hr))
-    {
-        CString str;
-        str.Format(_T("Device Removed Reason: 0x%08X"), hr);
-        AfxMessageBox(str);
-        return;
-    }
+    if (FAILED(hr)) return;
 
-    // 명령 기록 시작
     ThrowIfFailed(m_commandAllocator->Reset());
-    ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
+    ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), m_pipelineState.Get()));
 
-    // 리소스 상태 변경: Present -> RenderTarget
+    m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+    m_commandList->RSSetViewports(1, &m_viewport);
+    m_commandList->RSSetScissorRects(1, &m_scissorRect);
+
+    // CD3DX12_RESOURCE_BARRIER는 d3dx12.h에 존재하므로 그대로 사용
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
+    rtvHandle.ptr += m_frameIndex * m_rtvDescriptorSize;
     m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 
-    // 배경색으로 화면 지우기 (Clear)
     const float clearColor[] = { 0.2f, 0.2f, 0.3f, 1.0f };
     m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
-    // 리소스 상태 변경: RenderTarget -> Present
+    // --- 삼각형 렌더링 수행 영역 ---
+    
+    // 1. 기하학적 형태 정의 (삼각형 리스트 방식으로 그릴 것을 설정)
+    m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    
+    // 2. GPU에 정점 데이터 위치(버퍼 뷰) 전달
+    m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+    
+    // 3. 실제로 그리기 명령 (3개의 정점으로 1개의 인스턴스 출력)
+    m_commandList->DrawInstanced(3, 1, 0, 0);
+
+    // ---------------------------------
+
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
     ThrowIfFailed(m_commandList->Close());
 
-    // GPU에 명령 제출
     ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
     m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
-    // 화면 출력
     ThrowIfFailed(m_swapChain->Present(1, 0));
 
-    // CPU-GPU 동기화 (프레임 안정성)
     WaitForPreviousFrame();
 }
 
-/**
- * @brief 윈도우 리사이즈 시 그래픽 버퍼를 다시 구성합니다.
- */
 void CGraphicsEngine::Resize(int width, int height)
 {
     if (!m_isInitialized) return;
     if (width == 0 || height == 0) return;
     if (m_width == width && m_height == height) return;
 
-    // 실행 중인 GPU 작업 대기
     WaitForPreviousFrame();
 
-    // 기존 렌더 타겟 리소스 해제
     for (UINT n = 0; n < FrameCount; n++)
     {
         m_renderTargets[n].Reset();
     }
 
-    // 버퍼 크기 재조정
     DXGI_SWAP_CHAIN_DESC desc = {};
     m_swapChain->GetDesc(&desc);
     ThrowIfFailed(m_swapChain->ResizeBuffers(FrameCount, width, height, desc.BufferDesc.Format, desc.Flags));
@@ -231,29 +384,22 @@ void CGraphicsEngine::Resize(int width, int height)
     m_height = height;
     m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
 
-    // 새 리소스로 뷰 생성
     CreateRenderTargets();
 
-    // 뷰포트 정보 업데이트
     m_viewport = { 0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f };
     m_scissorRect = { 0, 0, width, height };
 }
 
-/**
- * @brief GPU가 현재 프레임의 명령을 모두 처리할 때까지 CPU를 대기시킵니다.
- */
 void CGraphicsEngine::WaitForPreviousFrame()
 {
     UINT64 fenceValue = m_fenceValues[m_frameIndex]++;
     ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), fenceValue));
 
-    // GPU가 아직 펜스 값에 도달하지 못했다면 이벤트 대기
     if (m_fence->GetCompletedValue() < fenceValue)
     {
         ThrowIfFailed(m_fence->SetEventOnCompletion(fenceValue, m_fenceEvent));
         WaitForSingleObject(m_fenceEvent, INFINITE);
     }
     
-    // 다음 사용할 백 버퍼 인덱스 갱신
     m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
 }
