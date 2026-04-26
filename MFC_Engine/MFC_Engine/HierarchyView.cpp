@@ -4,7 +4,7 @@
 #include "HierarchyView.h"
 #include "Resource.h"
 #include "MFC_Engine.h"
-#include "MFC_EngineDoc.h"
+#include "SceneManager.h"
 
 //////////////////////////////////////////////////////////////////////
 // 생성/소멸
@@ -73,21 +73,22 @@ void CHierarchyView::FillHierarchyView()
 	m_wndHierarchyView.DeleteAllItems();
 	m_mapGameObjects.clear();
 
-	CFrameWnd* pFrame = (CFrameWnd*)AfxGetMainWnd();
-	if (!pFrame) return;
+	auto pScene = CSceneManager::GetInstance().GetActiveScene();
+	if (!pScene) return;
 
-	CFrameWnd* pActiveFrame = pFrame->GetActiveFrame();
-	if (!pActiveFrame) return;
+	// Scene Root 추가
+	CString strSceneName = pScene->GetName().c_str();
+	HTREEITEM hSceneRoot = m_wndHierarchyView.InsertItem(strSceneName, 0, 0, TVI_ROOT);
+	m_wndHierarchyView.SetItemState(hSceneRoot, TVIS_BOLD, TVIS_BOLD);
 
-	CMFCEngineDoc* pDoc = (CMFCEngineDoc*)pActiveFrame->GetActiveDocument();
-	if (!pDoc || !pDoc->GetScene()) return;
-
-	auto gameObjects = pDoc->GetScene()->GetGameObjects();
+	auto gameObjects = pScene->GetGameObjects();
 
 	for (auto& obj : gameObjects)
 	{
-		InsertGameObject(TVI_ROOT, obj);
+		InsertGameObject(hSceneRoot, obj);
 	}
+
+	m_wndHierarchyView.Expand(hSceneRoot, TVE_EXPAND);
 }
 
 void CHierarchyView::InsertGameObject(HTREEITEM hParent, std::shared_ptr<CGameObject> pObj)
@@ -111,14 +112,18 @@ void CHierarchyView::OnSelChanged(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 
 	HTREEITEM hSelected = pNMTreeView->itemNew.hItem;
+	CMainFrame* pMainFrame = (CMainFrame*)AfxGetMainWnd();
+	if (!pMainFrame) return;
+
 	if (hSelected && m_mapGameObjects.count(hSelected))
 	{
 		auto pObj = m_mapGameObjects[hSelected];
-		CMainFrame* pMainFrame = (CMainFrame*)AfxGetMainWnd();
-		if (pMainFrame)
-		{
-			pMainFrame->GetInspectorView()->SetSelectedGameObject(pObj);
-		}
+		pMainFrame->GetInspectorView()->SetSelectedGameObject(pObj);
+	}
+	else
+	{
+		// 씬 루트가 선택되었거나 선택이 해제된 경우
+		pMainFrame->GetInspectorView()->SetSelectedGameObject(nullptr);
 	}
 }
 
@@ -150,18 +155,13 @@ void CHierarchyView::OnContextMenu(CWnd* pWnd, CPoint point)
 
 void CHierarchyView::OnCreateEmpty()
 {
-	CFrameWnd* pFrame = (CFrameWnd*)AfxGetMainWnd();
-	if (!pFrame) return;
-
-	CFrameWnd* pActiveFrame = pFrame->GetActiveFrame();
-	if (!pActiveFrame) return;
-
-	CMFCEngineDoc* pDoc = (CMFCEngineDoc*)pActiveFrame->GetActiveDocument();
-	if (!pDoc || !pDoc->GetScene()) return;
+	auto pScene = CSceneManager::GetInstance().GetActiveScene();
+	if (!pScene) return;
 
 	HTREEITEM hSelected = m_wndHierarchyView.GetSelectedItem();
 	auto newObj = CGameObject::Create(L"New GameObject");
 
+	// 씬 루트(부모가 TVI_ROOT인 첫 번째 아이템)가 선택된 경우도 처리
 	if (hSelected && m_mapGameObjects.count(hSelected))
 	{
 		auto pParent = m_mapGameObjects[hSelected];
@@ -169,7 +169,8 @@ void CHierarchyView::OnCreateEmpty()
 	}
 	else
 	{
-		pDoc->GetScene()->AddGameObject(newObj);
+		// 씬 루트가 선택되었거나 아무것도 선택되지 않은 경우 씬의 최상위 오브젝트로 추가
+		pScene->AddGameObject(newObj);
 	}
 
 	FillHierarchyView();
