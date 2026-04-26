@@ -2,6 +2,7 @@
 
 #include "TimeManager.h"
 #include <DirectXMath.h>
+#include <mutex>
 
 /**
  * @struct Vertex
@@ -93,4 +94,7 @@ private:
 
     // --- 매니저 객체 분리 ---
     CTimeManager m_timeManager;
+
+    // --- 스레드 동기화 ---
+    std::mutex m_mutex;
 };

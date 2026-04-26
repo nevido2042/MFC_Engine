@@ -34,18 +34,25 @@ BEGIN_MESSAGE_MAP(CMFCEngineView, CView)
 	ON_WM_CREATE()
 	ON_WM_SIZE()
 	ON_WM_ERASEBKGND()
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 // CMFCEngineView 생성/소멸
 
 CMFCEngineView::CMFCEngineView() noexcept
+	: m_bRenderThreadRunning(false)
 {
 	// TODO: 여기에 생성 코드를 추가합니다.
-
 }
 
 CMFCEngineView::~CMFCEngineView()
 {
+	// 스레드 종료 대기
+	m_bRenderThreadRunning = false;
+	if (m_renderThread.joinable())
+	{
+		m_renderThread.join();
+	}
 }
 
 BOOL CMFCEngineView::PreCreateWindow(CREATESTRUCT& cs)
@@ -65,22 +72,8 @@ void CMFCEngineView::OnDraw(CDC* /*pDC*/)
 	if (!pDoc)
 		return;
 
-	// Graphics Engine을 사용하여 렌더링 수행
-	if (m_graphicsEngine)
-	{
-		m_graphicsEngine->Render();
-
-		// FPS를 메인 윈도우 타이틀에 표시
-		static float lastFPS = 0.0f;
-		float currentFPS = m_graphicsEngine->GetFPS();
-		if (lastFPS != currentFPS)
-		{
-			CString strFPS;
-			strFPS.Format(_T("MFC_Engine [FPS: %.1f]"), currentFPS);
-			AfxGetMainWnd()->SetWindowText(strFPS);
-			lastFPS = currentFPS;
-		}
-	}
+	// 스레드에서 렌더링을 처리하므로 OnDraw에서는 별도 처리를 하지 않거나
+	// 필요한 경우 한 프레임만 명시적으로 그릴 수 있습니다.
 }
 
 
@@ -145,6 +138,13 @@ void CMFCEngineView::OnInitialUpdate()
 	{
 		m_graphicsEngine->Initialize(GetSafeHwnd(), rect.Width(), rect.Height());
 	}
+
+	// 렌더링 스레드 시작
+	m_bRenderThreadRunning = true;
+	m_renderThread = std::thread(&CMFCEngineView::RenderThreadLoop, this);
+
+	// FPS 갱신용 타이머 (500ms마다 한 번씩 타이틀 업데이트)
+	SetTimer(2, 500, NULL);
 }
 
 void CMFCEngineView::OnSize(UINT nType, int cx, int cy)
@@ -184,5 +184,48 @@ CMFCEngineDoc* CMFCEngineView::GetDocument() const // 디버그되지 않은 버
 }
 #endif //_DEBUG
 
+
+
+void CMFCEngineView::RenderThreadLoop()
+{
+	while (m_bRenderThreadRunning)
+	{
+		if (m_graphicsEngine)
+		{
+			m_graphicsEngine->Render();
+
+			// FPS를 메인 윈도우 타이틀에 표시 (UI 스레드 작업이므로 PostMessage 고려 가능하나 간단히 직접 수행)
+			// 단, AfxGetMainWnd() 등은 스레드 안전성에 주의해야 함.
+			// 여기서는 엔진의 GetFPS()만 호출하고, 타이틀 업데이트는 별도 타이머나 이벤트를 권장하지만
+			// 우선 렌더링 루프 확인을 위해 엔진만 호출.
+		}
+	}
+}
+
+void CMFCEngineView::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == 2) // FPS 업데이트 타이머
+	{
+		if (m_graphicsEngine)
+		{
+			float currentFPS = m_graphicsEngine->GetFPS();
+			CString strFPS;
+			strFPS.Format(_T("MFC_Engine [FPS: %.1f]"), currentFPS);
+			
+			// 메인 윈도우 또는 프레임 윈도우 타이틀 업데이트
+			CFrameWnd* pParentFrame = GetParentFrame();
+			if (pParentFrame)
+			{
+				pParentFrame->SetWindowText(strFPS);
+			}
+			else
+			{
+				AfxGetMainWnd()->SetWindowText(strFPS);
+			}
+		}
+	}
+
+	CView::OnTimer(nIDEvent);
+}
 
 // CMFCEngineView 메시지 처리기

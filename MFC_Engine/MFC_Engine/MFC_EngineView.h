@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <thread>
+#include <atomic>
+
 class CGraphicsEngine;
 
 class CMFCEngineView : public CView
@@ -20,6 +23,11 @@ public:
 
 private:
 	std::unique_ptr<CGraphicsEngine> m_graphicsEngine;
+
+	// 렌더링 스레드 관련
+	std::thread m_renderThread;
+	std::atomic<bool> m_bRenderThreadRunning;
+	void RenderThreadLoop();
 
 // 재정의입니다.
 public:
@@ -48,6 +56,7 @@ protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	DECLARE_MESSAGE_MAP()
 public:
 	virtual void OnInitialUpdate();

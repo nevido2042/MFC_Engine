@@ -369,6 +369,8 @@ void CGraphicsEngine::Render()
 {
     if (!m_isInitialized) return;
 
+    std::lock_guard<std::mutex> lock(m_mutex);
+
     m_timeManager.Update();
 
     HRESULT hr = m_device->GetDeviceRemovedReason();
@@ -432,6 +434,8 @@ void CGraphicsEngine::Resize(int width, int height)
     if (!m_isInitialized) return;
     if (width == 0 || height == 0) return;
     if (m_width == width && m_height == height) return;
+
+    std::lock_guard<std::mutex> lock(m_mutex);
 
     WaitForPreviousFrame();
 

@@ -162,7 +162,8 @@ BOOL CMFCEngineApp::OnIdle(LONG lCount)
 {
 	CWinAppEx::OnIdle(lCount);
 
-	// 메인 프레임을 통해 활성 뷰를 찾아 화면 갱신을 요청합니다.
+	// 렌더링 스레드가 별도로 동작하므로 OnIdle에서의 Invalidate는 더 이상 필요하지 않습니다.
+	/*
 	CMainFrame* pFrame = (CMainFrame*)m_pMainWnd;
 	if (pFrame)
 	{
@@ -176,6 +177,7 @@ BOOL CMFCEngineApp::OnIdle(LONG lCount)
 			}
 		}
 	}
+	*/
 
 	return TRUE; // 더 많은 작업을 위해 TRUE 반환 (무한 루프)
 }
