@@ -51,6 +51,7 @@ private:
     void CreateConstantBuffer();    // 상수 버퍼 생성
     void CreateDepthStencilBuffer(); // 깊이 버퍼 생성
 
+    void RenderGameObject(std::shared_ptr<class CGameObject> pObj, int& objIndex);
     void WaitForPreviousFrame();
 
 private:

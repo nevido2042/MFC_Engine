@@ -434,40 +434,7 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene)
 
         for (auto& pObj : gameObjects)
         {
-            if (objIndex >= 1024) break; 
-
-            auto pRenderer = pObj->GetComponent<CMeshRenderer>();
-            if (!pRenderer || !pRenderer->m_isEnabled) continue;
-
-            auto pFilter = pObj->GetComponent<CMeshFilter>();
-            if (!pFilter) continue;
-
-            auto pTransform = pObj->GetTransform();
-            if (!pTransform) continue;
-
-            // 행렬 계산
-            DirectX::XMMATRIX matWorld = pTransform->GetWorldMatrix();
-            DirectX::XMMATRIX matView = m_camera.GetViewMatrix();
-            float aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
-            DirectX::XMMATRIX matProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 100.0f);
-            
-            DirectX::XMMATRIX matWVP = matWorld * matView * matProj;
-
-            // 상수 버퍼 업데이트 (각 오브젝트별 고유 위치에 기록, 256바이트 정렬 준수)
-            SceneConstantBuffer cb;
-            DirectX::XMStoreFloat4x4(&cb.matWVP, DirectX::XMMatrixTranspose(matWVP));
-            memcpy(m_pCbvDataBegin + (objIndex * 256), &cb, sizeof(cb));
-
-            // 해당 오브젝트의 CBV 연결 및 그리기
-            m_commandList->SetGraphicsRootConstantBufferView(0, m_constantBuffer->GetGPUVirtualAddress() + (objIndex * 256));
-            
-            auto it = m_meshes.find(pFilter->m_meshName);
-            if (it != m_meshes.end())
-            {
-                it->second->Render(m_commandList);
-            }
-
-            objIndex++;
+            RenderGameObject(pObj, objIndex);
         }
     }
     else
@@ -536,6 +503,55 @@ void CGraphicsEngine::Resize(int width, int height)
     m_scissorRect = { 0, 0, width, height };
 
     CreateDepthStencilBuffer();
+}
+
+
+
+void CGraphicsEngine::RenderGameObject(std::shared_ptr<CGameObject> pObj, int& objIndex)
+{
+    if (objIndex >= 1024) return;
+
+    auto pRenderer = pObj->GetComponent<CMeshRenderer>();
+    if (pRenderer && pRenderer->m_isEnabled)
+    {
+        auto pFilter = pObj->GetComponent<CMeshFilter>();
+        if (pFilter)
+        {
+            auto pTransform = pObj->GetTransform();
+            if (pTransform)
+            {
+                // 행렬 계산
+                DirectX::XMMATRIX matWorld = pTransform->GetWorldMatrix();
+                DirectX::XMMATRIX matView = m_camera.GetViewMatrix();
+                float aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
+                DirectX::XMMATRIX matProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 100.0f);
+
+                DirectX::XMMATRIX matWVP = matWorld * matView * matProj;
+
+                // 상수 버퍼 업데이트
+                SceneConstantBuffer cb;
+                DirectX::XMStoreFloat4x4(&cb.matWVP, DirectX::XMMatrixTranspose(matWVP));
+                memcpy(m_pCbvDataBegin + (objIndex * 256), &cb, sizeof(cb));
+
+                // 해당 오브젝트의 CBV 연결 및 그리기
+                m_commandList->SetGraphicsRootConstantBufferView(0, m_constantBuffer->GetGPUVirtualAddress() + (objIndex * 256));
+
+                auto it = m_meshes.find(pFilter->m_meshName);
+                if (it != m_meshes.end())
+                {
+                    it->second->Render(m_commandList);
+                }
+
+                objIndex++;
+            }
+        }
+    }
+
+    // 자식들도 렌더링
+    for (auto& pChild : pObj->GetChildren())
+    {
+        RenderGameObject(pChild, objIndex);
+    }
 }
 
 void CGraphicsEngine::WaitForPreviousFrame()
