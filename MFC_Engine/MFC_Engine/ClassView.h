@@ -1,4 +1,4 @@
-﻿
+
 #pragma once
 
 #include "ViewTree.h"
@@ -12,6 +12,10 @@ class CClassToolBar : public CMFCToolBar
 
 	virtual BOOL AllowShowOnList() const { return FALSE; }
 };
+
+#include <memory>
+#include <map>
+#include "GameObject.h"
 
 class CClassView : public CDockablePane
 {
@@ -29,6 +33,12 @@ protected:
 	UINT m_nCurrSort;
 
 	void FillClassView();
+	void InsertGameObject(HTREEITEM hParent, std::shared_ptr<GameObject> pObj);
+	
+	afx_msg void OnSelChanged(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnCreateEmpty();
+
+	std::map<HTREEITEM, std::shared_ptr<GameObject>> m_mapGameObjects;
 
 // 재정의입니다.
 public:

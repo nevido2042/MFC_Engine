@@ -57,6 +57,8 @@ BEGIN_MESSAGE_MAP(CClassView, CDockablePane)
 	ON_COMMAND(ID_NEW_FOLDER, OnNewFolder)
 	ON_WM_PAINT()
 	ON_WM_SETFOCUS()
+	ON_NOTIFY(TVN_SELCHANGED, 2, OnSelChanged) // m_wndClassView ID is 2
+	ON_COMMAND(ID_HIERARCHY_CREATE_EMPTY, OnCreateEmpty)
 	ON_COMMAND_RANGE(ID_SORTING_GROUPBYTYPE, ID_SORTING_SORTBYACCESS, OnSort)
 	ON_UPDATE_COMMAND_UI_RANGE(ID_SORTING_GROUPBYTYPE, ID_SORTING_SORTBYACCESS, OnUpdateSort)
 END_MESSAGE_MAP()
@@ -122,9 +124,65 @@ void CClassView::OnSize(UINT nType, int cx, int cy)
 	AdjustLayout();
 }
 
+#include "MFC_EngineDoc.h"
+
 void CClassView::FillClassView()
 {
-	// 씬의 오브젝트 계층 구조와 연결될 예정입니다.
+	m_wndClassView.DeleteAllItems();
+	m_mapGameObjects.clear();
+
+	// 현재 활성화된 도큐먼트의 씬 데이터를 가져옵니다.
+	CFrameWnd* pFrame = (CFrameWnd*)AfxGetMainWnd();
+	if (!pFrame) return;
+
+	// MDI 환경이므로 ActiveFrame을 통해 뷰와 도큐먼트에 접근
+	CFrameWnd* pActiveFrame = pFrame->GetActiveFrame();
+	if (!pActiveFrame) return;
+
+	CMFCEngineDoc* pDoc = (CMFCEngineDoc*)pActiveFrame->GetActiveDocument();
+	if (!pDoc || !pDoc->GetScene()) return;
+
+	auto gameObjects = pDoc->GetScene()->GetGameObjects();
+
+	for (auto& obj : gameObjects)
+	{
+		InsertGameObject(TVI_ROOT, obj);
+	}
+}
+
+void CClassView::InsertGameObject(HTREEITEM hParent, std::shared_ptr<GameObject> pObj)
+{
+	if (!pObj) return;
+
+	HTREEITEM hItem = m_wndClassView.InsertItem(pObj->GetName().c_str(), 1, 1, hParent);
+	m_mapGameObjects[hItem] = pObj;
+	
+	// 각 자식들도 재귀적으로 추가
+	for (auto& child : pObj->GetChildren())
+	{
+		InsertGameObject(hItem, child);
+	}
+
+	m_wndClassView.Expand(hItem, TVE_EXPAND);
+}
+
+void CClassView::OnSelChanged(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMTREEVIEW pNMTreeView = reinterpret_cast<LPNMTREEVIEW>(pNMHDR);
+	*pResult = 0;
+
+	HTREEITEM hSelected = pNMTreeView->itemNew.hItem;
+	if (hSelected && m_mapGameObjects.count(hSelected))
+	{
+		auto pObj = m_mapGameObjects[hSelected];
+		
+		// Inspector(PropertiesWnd)를 찾아 업데이트 요청
+		CMainFrame* pMainFrame = (CMainFrame*)AfxGetMainWnd();
+		if (pMainFrame)
+		{
+			pMainFrame->GetPropertiesWnd()->SetSelectedGameObject(pObj);
+		}
+	}
 }
 
 void CClassView::OnContextMenu(CWnd* pWnd, CPoint point)
@@ -145,29 +203,51 @@ void CClassView::OnContextMenu(CWnd* pWnd, CPoint point)
 		pWndTree->ScreenToClient(&ptTree);
 
 		UINT flags = 0;
-		HTREEITEM hTreeItem = pWndTree->HitTest(ptTree, &flags);
-		if (hTreeItem != nullptr)
+		HTREEITEM hItem = pWndTree->HitTest(ptTree, &flags);
+		if (hItem != nullptr)
 		{
-			pWndTree->SelectItem(hTreeItem);
+			pWndTree->SelectItem(hItem);
 		}
 	}
 
 	pWndTree->SetFocus();
+
+	// 우클릭 메뉴 동적 생성
 	CMenu menu;
-	menu.LoadMenu(IDR_POPUP_SORT);
+	menu.CreatePopupMenu();
+	menu.AppendMenu(MF_STRING, ID_HIERARCHY_CREATE_EMPTY, _T("Create Empty GameObject"));
+	
+	menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
+}
 
-	CMenu* pSumMenu = menu.GetSubMenu(0);
+void CClassView::OnCreateEmpty()
+{
+	// 현재 도큐먼트의 씬에 새로운 오브젝트 추가
+	CFrameWnd* pFrame = (CFrameWnd*)AfxGetMainWnd();
+	if (!pFrame) return;
 
-	if (AfxGetMainWnd()->IsKindOf(RUNTIME_CLASS(CMDIFrameWndEx)))
+	CFrameWnd* pActiveFrame = pFrame->GetActiveFrame();
+	if (!pActiveFrame) return;
+
+	CMFCEngineDoc* pDoc = (CMFCEngineDoc*)pActiveFrame->GetActiveDocument();
+	if (!pDoc || !pDoc->GetScene()) return;
+
+	// 현재 선택된 항목이 있다면 그 자식으로 추가, 아니면 루트에 추가
+	HTREEITEM hSelected = m_wndClassView.GetSelectedItem();
+	auto newObj = GameObject::Create(L"New GameObject");
+
+	if (hSelected && m_mapGameObjects.count(hSelected))
 	{
-		CMFCPopupMenu* pPopupMenu = new CMFCPopupMenu;
-
-		if (!pPopupMenu->Create(this, point.x, point.y, (HMENU)pSumMenu->m_hMenu, FALSE, TRUE))
-			return;
-
-		((CMDIFrameWndEx*)AfxGetMainWnd())->OnShowPopupMenu(pPopupMenu);
-		UpdateDialogControls(this, FALSE);
+		auto pParent = m_mapGameObjects[hSelected];
+		pParent->AddChild(newObj);
 	}
+	else
+	{
+		pDoc->GetScene()->AddGameObject(newObj);
+	}
+
+	// 트리 갱신
+	FillClassView();
 }
 
 void CClassView::AdjustLayout()

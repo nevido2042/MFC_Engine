@@ -206,6 +206,10 @@
     <ClInclude Include="ViewTree.h" />
     <ClInclude Include="GraphicsEngine.h" />
     <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="GameObject.h" />
+    <ClInclude Include="Component.h" />
+    <ClInclude Include="Transform.h" />
+    <ClInclude Include="Scene.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ChildFrm.cpp" />
@@ -226,6 +230,8 @@
     <ClCompile Include="TimeManager.cpp" />
     <ClCompile Include="ViewTree.cpp" />
     <ClCompile Include="GraphicsEngine.cpp" />
+    <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="Scene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MFCEngine.rc" />

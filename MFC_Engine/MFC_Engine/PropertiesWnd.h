@@ -1,4 +1,4 @@
-﻿
+
 #pragma once
 
 class CPropertiesToolBar : public CMFCToolBar
@@ -12,6 +12,8 @@ public:
 	virtual BOOL AllowShowOnList() const { return FALSE; }
 };
 
+#include "GameObject.h"
+
 class CPropertiesWnd : public CDockablePane
 {
 // 생성입니다.
@@ -19,6 +21,13 @@ public:
 	CPropertiesWnd() noexcept;
 
 	void AdjustLayout();
+
+	void SetSelectedGameObject(std::shared_ptr<GameObject> pObj);
+
+protected:
+	std::shared_ptr<GameObject> m_pSelectedObj;
+
+	afx_msg LRESULT OnPropertyChanged(WPARAM, LPARAM);
 
 // 특성입니다.
 public:

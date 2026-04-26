@@ -1,10 +1,12 @@
-﻿
+
 // MFC_EngineDoc.h: CMFCEngineDoc 클래스의 인터페이스
 //
 
 
 #pragma once
 
+
+#include "Scene.h"
 
 class CMFCEngineDoc : public CDocument
 {
@@ -14,6 +16,10 @@ protected: // serialization에서만 만들어집니다.
 
 // 특성입니다.
 public:
+	std::shared_ptr<Scene> GetScene() { return m_pScene; }
+
+private:
+	std::shared_ptr<Scene> m_pScene;
 
 // 작업입니다.
 public:

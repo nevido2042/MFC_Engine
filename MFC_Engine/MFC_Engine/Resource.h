@@ -1,4 +1,4 @@
-﻿//{{NO_DEPENDENCIES}}
+//{{NO_DEPENDENCIES}}
 // Microsoft Visual C++에서 생성한 포함 파일입니다.
 // MFCEngine.rc에서 사용
 //
@@ -42,6 +42,7 @@
 #define IDS_CLASS_VIEW				156
 #define IDS_OUTPUT_WND				157
 #define IDS_PROPERTIES_WND			158
+#define ID_HIERARCHY_CREATE_EMPTY       32800
 #define IDI_FILE_VIEW				161
 #define IDI_FILE_VIEW_HC			162
 #define IDI_CLASS_VIEW				163

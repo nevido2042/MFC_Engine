@@ -1,4 +1,4 @@
-﻿
+
 // MFC_EngineDoc.cpp: CMFCEngineDoc 클래스의 구현
 //
 
@@ -31,7 +31,7 @@ END_MESSAGE_MAP()
 CMFCEngineDoc::CMFCEngineDoc() noexcept
 {
 	// TODO: 여기에 일회성 생성 코드를 추가합니다.
-
+	m_pScene = std::make_shared<Scene>();
 }
 
 CMFCEngineDoc::~CMFCEngineDoc()

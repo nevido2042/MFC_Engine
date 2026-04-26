@@ -1,4 +1,4 @@
-﻿
+
 // MainFrm.h: CMainFrame 클래스의 인터페이스
 //
 
@@ -6,6 +6,8 @@
 #include "FileView.h"
 #include "ClassView.h"
 #include "OutputWnd.h"
+#include "PropertiesWnd.h"
+
 #include "PropertiesWnd.h"
 
 class CMainFrame : public CMDIFrameWndEx
@@ -16,6 +18,7 @@ public:
 
 // 특성입니다.
 public:
+	CPropertiesWnd* GetPropertiesWnd() { return &m_wndProperties; }
 
 // 작업입니다.
 public:
