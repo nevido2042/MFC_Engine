@@ -10,7 +10,9 @@
 
 CSceneView::CSceneView() noexcept
 	: m_bIsRunning(false)
+	, m_bRButtonDown(false)
 {
+	memset(m_keys, 0, sizeof(m_keys));
 }
 
 CSceneView::~CSceneView()
@@ -28,6 +30,10 @@ BEGIN_MESSAGE_MAP(CSceneView, CDockablePane)
 	ON_WM_PAINT()
 	ON_WM_SETFOCUS()
 	ON_WM_DESTROY()
+	ON_WM_RBUTTONDOWN()
+	ON_WM_RBUTTONUP()
+	ON_WM_MOUSEMOVE()
+	ON_WM_CONTEXTMENU()
 END_MESSAGE_MAP()
 
 int CSceneView::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -81,16 +87,91 @@ void CSceneView::OnDestroy()
 	CDockablePane::OnDestroy();
 }
 
+void CSceneView::OnRButtonDown(UINT nFlags, CPoint point)
+{
+	m_bRButtonDown = true;
+	m_lastMousePos = point;
+	SetCapture();
+	CDockablePane::OnRButtonDown(nFlags, point);
+}
+
+void CSceneView::OnRButtonUp(UINT nFlags, CPoint point)
+{
+	m_bRButtonDown = false;
+	ReleaseCapture();
+	CDockablePane::OnRButtonUp(nFlags, point);
+}
+
+void CSceneView::OnMouseMove(UINT nFlags, CPoint point)
+{
+	if (m_bRButtonDown && m_pEngine)
+	{
+		float dx = static_cast<float>(point.x - m_lastMousePos.x);
+		float dy = static_cast<float>(point.y - m_lastMousePos.y);
+
+		m_pEngine->RotateCamera(dy, dx);
+		m_lastMousePos = point;
+	}
+
+	CDockablePane::OnMouseMove(nFlags, point);
+}
+
+void CSceneView::OnContextMenu(CWnd* pWnd, CPoint point)
+{
+	// 컨텍스트 메뉴가 뜨지 않도록 아무것도 하지 않음
+}
+
+BOOL CSceneView::PreTranslateMessage(MSG* pMsg)
+{
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		m_keys[pMsg->wParam] = true;
+	}
+	else if (pMsg->message == WM_KEYUP)
+	{
+		m_keys[pMsg->wParam] = false;
+	}
+
+	return CDockablePane::PreTranslateMessage(pMsg);
+}
+
 void CSceneView::RenderLoop()
 {
+	auto lastTime = std::chrono::high_resolution_clock::now();
+
 	while (m_bIsRunning)
 	{
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
+		lastTime = currentTime;
+
 		if (m_pEngine)
 		{
+			ProcessInput(deltaTime);
 			m_pEngine->Render();
 		}
 		
-		// CPU 점유율 조절을 위해 아주 짧게 대기 (선택 사항)
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
+}
+
+void CSceneView::ProcessInput(float deltaTime)
+{
+	if (!m_bRButtonDown) return;
+
+	float forward = 0.0f;
+	float right = 0.0f;
+	float up = 0.0f;
+
+	if (m_keys['W']) forward += 1.0f;
+	if (m_keys['S']) forward -= 1.0f;
+	if (m_keys['A']) right -= 1.0f;
+	if (m_keys['D']) right += 1.0f;
+	if (m_keys['Q']) up -= 1.0f;
+	if (m_keys['E']) up += 1.0f;
+
+	if (forward != 0.0f || right != 0.0f || up != 0.0f)
+	{
+		m_pEngine->MoveCamera(forward, right, up, deltaTime);
 	}
 }

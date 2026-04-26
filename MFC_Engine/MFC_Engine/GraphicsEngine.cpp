@@ -496,11 +496,8 @@ void CGraphicsEngine::Render()
     // World: 회전 행렬
     DirectX::XMMATRIX matWorld = DirectX::XMMatrixRotationRollPitchYaw(totalTime * 0.5f, totalTime, 0.0f);
     
-    // View: 카메라 위치 설정
-    DirectX::XMVECTOR eyePos = DirectX::XMVectorSet(0.0f, 2.0f, -5.0f, 0.0f);
-    DirectX::XMVECTOR focusPos = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-    DirectX::XMVECTOR upDir = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    DirectX::XMMATRIX matView = DirectX::XMMatrixLookAtLH(eyePos, focusPos, upDir);
+    // View: 카메라 위치 및 회전 설정
+    DirectX::XMMATRIX matView = m_camera.GetViewMatrix();
     
     // Projection: 원근 투영
     float aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
@@ -589,4 +586,16 @@ void CGraphicsEngine::WaitForPreviousFrame()
     }
     
     m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+}
+
+void CGraphicsEngine::MoveCamera(float forward, float right, float up, float deltaTime)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_camera.Move(forward, right, up, deltaTime);
+}
+
+void CGraphicsEngine::RotateCamera(float pitch, float yaw)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_camera.Rotate(pitch, yaw);
 }

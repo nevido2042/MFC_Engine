@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TimeManager.h"
+#include "Camera.h"
 #include <DirectXMath.h>
 #include <mutex>
 
@@ -39,6 +40,10 @@ public:
     void Render();
     void Resize(int width, int height);
     float GetFPS() const { return m_timeManager.GetFPS(); }
+
+    // --- 카메라 제어 ---
+    void MoveCamera(float forward, float right, float up, float deltaTime);
+    void RotateCamera(float pitch, float yaw);
 
 private:
     // --- 초기화 내부 함수 ---
@@ -98,6 +103,9 @@ private:
     bool m_isInitialized;
     int m_width;
     int m_height;
+
+    // --- 카메라 데이터 ---
+    CCamera m_camera;
 
     // --- 매니저 객체 분리 ---
     CTimeManager m_timeManager;
