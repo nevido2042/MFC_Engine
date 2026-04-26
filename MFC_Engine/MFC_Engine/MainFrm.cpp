@@ -1,4 +1,4 @@
-﻿
+
 // MainFrm.cpp: CMainFrame 클래스의 구현
 //
 
@@ -118,15 +118,20 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	}
 
-	m_wndFileView.EnableDocking(CBRS_ALIGN_ANY);
 	m_wndClassView.EnableDocking(CBRS_ALIGN_ANY);
-	DockPane(&m_wndFileView);
-	CDockablePane* pTabbedBar = nullptr;
-	m_wndClassView.AttachToTabWnd(&m_wndFileView, DM_SHOW, TRUE, &pTabbedBar);
-	m_wndOutput.EnableDocking(CBRS_ALIGN_ANY);
-	DockPane(&m_wndOutput);
 	m_wndProperties.EnableDocking(CBRS_ALIGN_ANY);
+	m_wndFileView.EnableDocking(CBRS_ALIGN_ANY);
+	m_wndOutput.EnableDocking(CBRS_ALIGN_ANY);
+
+	// 좌측에 Hierarchy 배치
+	DockPane(&m_wndClassView);
+	// 우측에 Inspector 배치
 	DockPane(&m_wndProperties);
+	// 하단에 Project 배치
+	DockPane(&m_wndFileView);
+	// Project와 Console을 탭으로 묶음
+	CDockablePane* pTabbedBar = nullptr;
+	m_wndOutput.AttachToTabWnd(&m_wndFileView, DM_SHOW, TRUE, &pTabbedBar);
 
 	// 보관된 값에 따라 비주얼 관리자 및 스타일을 설정합니다.
 	OnApplicationLook(theApp.m_nAppLook);
@@ -195,44 +200,32 @@ BOOL CMainFrame::CreateDockingWindows()
 {
 	BOOL bNameValid;
 
-	// 클래스 뷰를 만듭니다.
-	CString strClassView;
-	bNameValid = strClassView.LoadString(IDS_CLASS_VIEW);
-	ASSERT(bNameValid);
-	if (!m_wndClassView.Create(strClassView, this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_CLASSVIEW, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_LEFT | CBRS_FLOAT_MULTI))
+	// Hierarchy (기존 클래스 뷰)
+	if (!m_wndClassView.Create(_T("Hierarchy"), this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_CLASSVIEW, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_LEFT | CBRS_FLOAT_MULTI))
 	{
-		TRACE0("클래스 뷰 창을 만들지 못했습니다.\n");
-		return FALSE; // 만들지 못했습니다.
+		TRACE0("Hierarchy 창을 만들지 못했습니다.\n");
+		return FALSE;
 	}
 
-	// 파일 뷰를 만듭니다.
-	CString strFileView;
-	bNameValid = strFileView.LoadString(IDS_FILE_VIEW);
-	ASSERT(bNameValid);
-	if (!m_wndFileView.Create(strFileView, this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_FILEVIEW, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_LEFT| CBRS_FLOAT_MULTI))
+	// Project (기존 파일 뷰)
+	if (!m_wndFileView.Create(_T("Project"), this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_FILEVIEW, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_LEFT| CBRS_FLOAT_MULTI))
 	{
-		TRACE0("파일 뷰 창을 만들지 못했습니다.\n");
-		return FALSE; // 만들지 못했습니다.
+		TRACE0("Project 창을 만들지 못했습니다.\n");
+		return FALSE;
 	}
 
-	// 출력 창을 만듭니다.
-	CString strOutputWnd;
-	bNameValid = strOutputWnd.LoadString(IDS_OUTPUT_WND);
-	ASSERT(bNameValid);
-	if (!m_wndOutput.Create(strOutputWnd, this, CRect(0, 0, 100, 100), TRUE, ID_VIEW_OUTPUTWND, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_BOTTOM | CBRS_FLOAT_MULTI))
+	// Console (기존 출력 창)
+	if (!m_wndOutput.Create(_T("Console"), this, CRect(0, 0, 100, 100), TRUE, ID_VIEW_OUTPUTWND, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_BOTTOM | CBRS_FLOAT_MULTI))
 	{
-		TRACE0("출력 창을 만들지 못했습니다.\n");
-		return FALSE; // 만들지 못했습니다.
+		TRACE0("Console 창을 만들지 못했습니다.\n");
+		return FALSE;
 	}
 
-	// 속성 창을 만듭니다.
-	CString strPropertiesWnd;
-	bNameValid = strPropertiesWnd.LoadString(IDS_PROPERTIES_WND);
-	ASSERT(bNameValid);
-	if (!m_wndProperties.Create(strPropertiesWnd, this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_PROPERTIESWND, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_RIGHT | CBRS_FLOAT_MULTI))
+	// Inspector (기존 속성 창)
+	if (!m_wndProperties.Create(_T("Inspector"), this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_PROPERTIESWND, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_RIGHT | CBRS_FLOAT_MULTI))
 	{
-		TRACE0("속성 창을 만들지 못했습니다.\n");
-		return FALSE; // 만들지 못했습니다.
+		TRACE0("Inspector 창을 만들지 못했습니다.\n");
+		return FALSE;
 	}
 
 	SetDockingWindowIcons(theApp.m_bHiColorIcons);
