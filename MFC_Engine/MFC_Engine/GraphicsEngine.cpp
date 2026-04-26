@@ -56,6 +56,7 @@ bool CGraphicsEngine::Initialize(HWND hWnd, int width, int height)
     CreateRootSignature();
     CreatePipelineState();
     CreateVertexBuffer();
+    CreateConstantBuffer();
 
     // 초기 명령 리스트 생성 및 닫기
     ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
@@ -170,10 +171,17 @@ void CGraphicsEngine::CreateCommandAllocator()
  */
 void CGraphicsEngine::CreateRootSignature()
 {
+    // 상수 버퍼를 위한 루트 파라미터 정의
+    D3D12_ROOT_PARAMETER rootParameters[1];
+    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[0].Descriptor.ShaderRegister = 0;
+    rootParameters[0].Descriptor.RegisterSpace = 0;
+    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
     // 기본 루트 시그니처 구조체 직접 작성
     D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
-    rootSignatureDesc.NumParameters = 0;
-    rootSignatureDesc.pParameters = nullptr;
+    rootSignatureDesc.NumParameters = 1;
+    rootSignatureDesc.pParameters = rootParameters;
     rootSignatureDesc.NumStaticSamplers = 0;
     rootSignatureDesc.pStaticSamplers = nullptr;
     rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
@@ -310,6 +318,51 @@ void CGraphicsEngine::CreateVertexBuffer()
 }
 
 /**
+ * @brief 쉐이더 상수를 담을 버퍼를 생성하고 메모리 매핑을 수행합니다.
+ */
+void CGraphicsEngine::CreateConstantBuffer()
+{
+    const UINT constantBufferSize = sizeof(SceneConstantBuffer);
+
+    D3D12_HEAP_PROPERTIES heapProps = {};
+    heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
+    heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heapProps.CreationNodeMask = 1;
+    heapProps.VisibleNodeMask = 1;
+
+    D3D12_RESOURCE_DESC resDesc = {};
+    resDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    resDesc.Alignment = 0;
+    resDesc.Width = constantBufferSize;
+    resDesc.Height = 1;
+    resDesc.DepthOrArraySize = 1;
+    resDesc.MipLevels = 1;
+    resDesc.Format = DXGI_FORMAT_UNKNOWN;
+    resDesc.SampleDesc.Count = 1;
+    resDesc.SampleDesc.Quality = 0;
+    resDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    resDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+    ThrowIfFailed(m_device->CreateCommittedResource(
+        &heapProps,
+        D3D12_HEAP_FLAG_NONE,
+        &resDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(&m_constantBuffer)));
+
+    // 상수 버퍼는 CPU에서 매 프레임 쓰기 위해 Map을 유지합니다.
+    D3D12_RANGE readRange = { 0, 0 };
+    ThrowIfFailed(m_constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_pCbvDataBegin)));
+    
+    // 초기값 (단위 행렬) 설정
+    SceneConstantBuffer cb;
+    DirectX::XMStoreFloat4x4(&cb.matRotation, DirectX::XMMatrixIdentity());
+    memcpy(m_pCbvDataBegin, &cb, sizeof(cb));
+}
+
+/**
  * @brief 실시간 렌더링 루프를 수행합니다.
  */
 void CGraphicsEngine::Render()
@@ -340,6 +393,17 @@ void CGraphicsEngine::Render()
 
     // --- 삼각형 렌더링 수행 영역 ---
     
+    // 0. 회전 행렬 계산 및 상수 버퍼 업데이트
+    SceneConstantBuffer cb;
+    float totalTime = m_timeManager.GetTotalTime();
+    // Z축 기준 회전 행렬 생성 (HLSL mul 순서에 맞춰 Transpose)
+    DirectX::XMMATRIX rotationMat = DirectX::XMMatrixRotationZ(totalTime);
+    DirectX::XMStoreFloat4x4(&cb.matRotation, DirectX::XMMatrixTranspose(rotationMat));
+    memcpy(m_pCbvDataBegin, &cb, sizeof(cb));
+
+    // 루트 파라미터 0번에 상수 버퍼 주소 연결
+    m_commandList->SetGraphicsRootConstantBufferView(0, m_constantBuffer->GetGPUVirtualAddress());
+
     // 1. 기하학적 형태 정의 (삼각형 리스트 방식으로 그릴 것을 설정)
     m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     

@@ -14,6 +14,16 @@ struct Vertex
 };
 
 /**
+ * @struct SceneConstantBuffer
+ * @brief 쉐이더로 전달할 전역 데이터 구조체입니다 (256바이트 정렬 필요).
+ */
+struct SceneConstantBuffer
+{
+    DirectX::XMFLOAT4X4 matRotation;
+    float padding[48]; // 256바이트 패딩
+};
+
+/**
  * @class CGraphicsEngine
  * @brief DirectX 12 기반의 그래픽 렌더링 핵심 엔진 클래스입니다.
  */
@@ -42,6 +52,7 @@ private:
     void CreateRootSignature();     // 쉐이더 자원 바인딩 레이아웃 생성
     void CreatePipelineState();     // 그래픽 파이프라인 상태(PSO) 생성
     void CreateVertexBuffer();      // 정점 데이터 버퍼 생성
+    void CreateConstantBuffer();    // 상수 버퍼 생성
 
     void WaitForPreviousFrame();
 
@@ -62,6 +73,9 @@ private:
     ComPtr<ID3D12PipelineState> m_pipelineState; // 파이프라인 상태 객체(PSO)
     ComPtr<ID3D12Resource> m_vertexBuffer;      // 정점 버퍼 리소스
     D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView; // 정점 버퍼 뷰
+    
+    ComPtr<ID3D12Resource> m_constantBuffer;    // 상수 버퍼 리소스
+    UINT8* m_pCbvDataBegin;                     // 상수 버퍼 매핑 포인터
 
     // --- 동기화 및 상태 변수 ---
     UINT m_frameIndex;
