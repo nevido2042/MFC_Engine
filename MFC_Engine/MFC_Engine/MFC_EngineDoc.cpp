@@ -31,7 +31,7 @@ END_MESSAGE_MAP()
 CMFCEngineDoc::CMFCEngineDoc() noexcept
 {
 	// TODO: 여기에 일회성 생성 코드를 추가합니다.
-	m_pScene = std::make_shared<Scene>();
+	m_pScene = std::make_shared<CScene>();
 }
 
 CMFCEngineDoc::~CMFCEngineDoc()

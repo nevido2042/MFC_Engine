@@ -22,10 +22,10 @@ public:
 
 	void AdjustLayout();
 
-	void SetSelectedGameObject(std::shared_ptr<GameObject> pObj);
+	void SetSelectedGameObject(std::shared_ptr<CGameObject> pObj);
 
 protected:
-	std::shared_ptr<GameObject> m_pSelectedObj;
+	std::shared_ptr<CGameObject> m_pSelectedObj;
 
 	afx_msg LRESULT OnPropertyChanged(WPARAM, LPARAM);
 

@@ -4,24 +4,24 @@
 #include <memory>
 #include "Transform.h"
 
-class GameObject : public std::enable_shared_from_this<GameObject>
+class CGameObject : public std::enable_shared_from_this<CGameObject>
 {
 public:
-    GameObject(const std::wstring& name);
-    ~GameObject();
+    CGameObject(const std::wstring& name);
+    ~CGameObject();
 
-    static std::shared_ptr<GameObject> Create(const std::wstring& name);
+    static std::shared_ptr<CGameObject> Create(const std::wstring& name);
 
     const std::wstring& GetName() const { return m_name; }
     void SetName(const std::wstring& name) { m_name = name; }
 
-    std::shared_ptr<Transform> GetTransform() { return m_pTransform; }
+    std::shared_ptr<CTransform> GetTransform() { return m_pTransform; }
 
     // Hierarchy management
-    void AddChild(std::shared_ptr<GameObject> child);
-    const std::vector<std::shared_ptr<GameObject>>& GetChildren() const { return m_children; }
+    void AddChild(std::shared_ptr<CGameObject> child);
+    const std::vector<std::shared_ptr<CGameObject>>& GetChildren() const { return m_children; }
     
-    GameObject* GetParent() { return m_pParent; }
+    CGameObject* GetParent() { return m_pParent; }
 
     // Component management
     template<typename T>
@@ -37,8 +37,8 @@ public:
 
 private:
     std::wstring m_name;
-    GameObject* m_pParent = nullptr;
-    std::shared_ptr<Transform> m_pTransform;
-    std::vector<std::shared_ptr<Component>> m_components;
-    std::vector<std::shared_ptr<GameObject>> m_children;
+    CGameObject* m_pParent = nullptr;
+    std::shared_ptr<CTransform> m_pTransform;
+    std::vector<std::shared_ptr<CComponent>> m_components;
+    std::vector<std::shared_ptr<CGameObject>> m_children;
 };

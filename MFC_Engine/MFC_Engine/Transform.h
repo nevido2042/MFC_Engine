@@ -2,10 +2,10 @@
 #include "Component.h"
 #include <directxmath.h>
 
-class Transform : public Component
+class CTransform : public CComponent
 {
 public:
-    Transform(GameObject* owner) : Component(owner) 
+    CTransform(CGameObject* owner) : CComponent(owner) 
     {
         m_position = { 0, 0, 0 };
         m_rotation = { 0, 0, 0 };

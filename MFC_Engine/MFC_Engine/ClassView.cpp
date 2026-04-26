@@ -150,7 +150,7 @@ void CClassView::FillClassView()
 	}
 }
 
-void CClassView::InsertGameObject(HTREEITEM hParent, std::shared_ptr<GameObject> pObj)
+void CClassView::InsertGameObject(HTREEITEM hParent, std::shared_ptr<CGameObject> pObj)
 {
 	if (!pObj) return;
 
@@ -234,7 +234,7 @@ void CClassView::OnCreateEmpty()
 
 	// 현재 선택된 항목이 있다면 그 자식으로 추가, 아니면 루트에 추가
 	HTREEITEM hSelected = m_wndClassView.GetSelectedItem();
-	auto newObj = GameObject::Create(L"New GameObject");
+	auto newObj = CGameObject::Create(L"New GameObject");
 
 	if (hSelected && m_mapGameObjects.count(hSelected))
 	{

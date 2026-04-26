@@ -156,7 +156,7 @@ void CPropertiesWnd::OnUpdateProperties2(CCmdUI* /*pCmdUI*/)
 	// TODO: 여기에 명령 업데이트 UI 처리기 코드를 추가합니다.
 }
 
-void CPropertiesWnd::SetSelectedGameObject(std::shared_ptr<GameObject> pObj)
+void CPropertiesWnd::SetSelectedGameObject(std::shared_ptr<CGameObject> pObj)
 {
 	m_pSelectedObj = pObj;
 	if (m_pSelectedObj)

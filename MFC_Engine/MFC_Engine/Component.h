@@ -1,18 +1,18 @@
 #pragma once
 #include <string>
 
-class GameObject;
+class CGameObject;
 
-class Component
+class CComponent
 {
 public:
-    Component(GameObject* owner) : m_pOwner(owner) {}
-    virtual ~Component() {}
+    CComponent(CGameObject* owner) : m_pOwner(owner) {}
+    virtual ~CComponent() {}
 
     virtual void Update() {}
     
-    GameObject* GetOwner() { return m_pOwner; }
+    CGameObject* GetOwner() { return m_pOwner; }
 
 protected:
-    GameObject* m_pOwner;
+    CGameObject* m_pOwner;
 };

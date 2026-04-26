@@ -3,15 +3,15 @@
 #include <memory>
 #include "GameObject.h"
 
-class Scene
+class CScene
 {
 public:
-    Scene();
-    ~Scene();
+    CScene();
+    ~CScene();
 
-    void AddGameObject(std::shared_ptr<GameObject> obj) { m_gameObjects.push_back(obj); }
-    const std::vector<std::shared_ptr<GameObject>>& GetGameObjects() const { return m_gameObjects; }
+    void AddGameObject(std::shared_ptr<CGameObject> obj) { m_gameObjects.push_back(obj); }
+    const std::vector<std::shared_ptr<CGameObject>>& GetGameObjects() const { return m_gameObjects; }
 
 private:
-    std::vector<std::shared_ptr<GameObject>> m_gameObjects;
+    std::vector<std::shared_ptr<CGameObject>> m_gameObjects;
 };

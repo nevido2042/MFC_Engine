@@ -33,12 +33,12 @@ protected:
 	UINT m_nCurrSort;
 
 	void FillClassView();
-	void InsertGameObject(HTREEITEM hParent, std::shared_ptr<GameObject> pObj);
+	void InsertGameObject(HTREEITEM hParent, std::shared_ptr<CGameObject> pObj);
 	
 	afx_msg void OnSelChanged(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnCreateEmpty();
 
-	std::map<HTREEITEM, std::shared_ptr<GameObject>> m_mapGameObjects;
+	std::map<HTREEITEM, std::shared_ptr<CGameObject>> m_mapGameObjects;
 
 // 재정의입니다.
 public:

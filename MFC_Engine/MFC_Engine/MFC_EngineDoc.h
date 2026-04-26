@@ -16,10 +16,10 @@ protected: // serialization에서만 만들어집니다.
 
 // 특성입니다.
 public:
-	std::shared_ptr<Scene> GetScene() { return m_pScene; }
+	std::shared_ptr<CScene> GetScene() { return m_pScene; }
 
 private:
-	std::shared_ptr<Scene> m_pScene;
+	std::shared_ptr<CScene> m_pScene;
 
 // 작업입니다.
 public:
