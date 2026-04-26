@@ -57,6 +57,7 @@ bool CGraphicsEngine::Initialize(HWND hWnd, int width, int height)
     CreatePipelineState();
     CreateVertexBuffer();
     CreateConstantBuffer();
+    CreateDepthStencilBuffer();
 
     // 초기 명령 리스트 생성 및 닫기
     ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
@@ -135,12 +136,21 @@ void CGraphicsEngine::CreateSwapChain(HWND hWnd, int width, int height)
  */
 void CGraphicsEngine::CreateDescriptorHeaps()
 {
+    // RTV Heap
     D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
     rtvHeapDesc.NumDescriptors = FrameCount;
     rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     ThrowIfFailed(m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
     m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+    // DSV Heap
+    D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+    dsvHeapDesc.NumDescriptors = 1;
+    dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+    dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    ThrowIfFailed(m_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
+    m_dsvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 }
 
 /**
@@ -251,12 +261,17 @@ void CGraphicsEngine::CreatePipelineState()
     for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
         psoDesc.BlendState.RenderTarget[i] = defaultRenderTargetBlendDesc;
 
-    psoDesc.DepthStencilState.DepthEnable = FALSE;
+    // 깊이 스텐실 설정
+    psoDesc.DepthStencilState.DepthEnable = TRUE;
+    psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+    psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
     psoDesc.DepthStencilState.StencilEnable = FALSE;
+    
     psoDesc.SampleMask = UINT_MAX;
     psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     psoDesc.NumRenderTargets = 1;
     psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
     psoDesc.SampleDesc.Count = 1;
 
     ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
@@ -267,14 +282,59 @@ void CGraphicsEngine::CreatePipelineState()
  */
 void CGraphicsEngine::CreateVertexBuffer()
 {
-    Vertex triangleVertices[] =
+    // 큐브 정점 데이터 (36개의 정점 - Triangle List)
+    Vertex cubeVertices[] =
     {
-        { { 0.0f, 0.25f * m_height / m_width, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
-        { { 0.25f, -0.25f * m_height / m_width, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-        { { -0.25f, -0.25f * m_height / m_width, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } }
+        // 앞면
+        { { -0.5f,  0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+        { {  0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+        { { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+        { { -0.5f,  0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+        { {  0.5f,  0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+        { {  0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+
+        // 뒷면
+        { { -0.5f,  0.5f,  0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+        { { -0.5f, -0.5f,  0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+        { {  0.5f, -0.5f,  0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+        { { -0.5f,  0.5f,  0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+        { {  0.5f, -0.5f,  0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+        { {  0.5f,  0.5f,  0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+
+        // 윗면
+        { { -0.5f,  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+        { {  0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+        { { -0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+        { { -0.5f,  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+        { {  0.5f,  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+        { {  0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+
+        // 아랫면
+        { { -0.5f, -0.5f,  0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
+        { { -0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
+        { {  0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
+        { { -0.5f, -0.5f,  0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
+        { {  0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
+        { {  0.5f, -0.5f,  0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
+
+        // 왼쪽면
+        { { -0.5f,  0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+        { { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+        { { -0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+        { { -0.5f,  0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+        { { -0.5f,  0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+        { { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+
+        // 오른쪽면
+        { {  0.5f,  0.5f,  0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
+        { {  0.5f, -0.5f,  0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
+        { {  0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
+        { {  0.5f,  0.5f,  0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
+        { {  0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
+        { {  0.5f,  0.5f, -0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
     };
 
-    const UINT vertexBufferSize = sizeof(triangleVertices);
+    const UINT vertexBufferSize = sizeof(cubeVertices);
 
     // Heap Properties 직접 설정
     D3D12_HEAP_PROPERTIES heapProps = {};
@@ -309,7 +369,7 @@ void CGraphicsEngine::CreateVertexBuffer()
     UINT8* pVertexDataBegin;
     D3D12_RANGE readRange = { 0, 0 };
     ThrowIfFailed(m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-    memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
+    memcpy(pVertexDataBegin, cubeVertices, sizeof(cubeVertices));
     m_vertexBuffer->Unmap(0, nullptr);
 
     m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
@@ -358,8 +418,43 @@ void CGraphicsEngine::CreateConstantBuffer()
     
     // 초기값 (단위 행렬) 설정
     SceneConstantBuffer cb;
-    DirectX::XMStoreFloat4x4(&cb.matRotation, DirectX::XMMatrixIdentity());
+    DirectX::XMStoreFloat4x4(&cb.matWVP, DirectX::XMMatrixIdentity());
     memcpy(m_pCbvDataBegin, &cb, sizeof(cb));
+}
+
+void CGraphicsEngine::CreateDepthStencilBuffer()
+{
+    D3D12_RESOURCE_DESC depthResourceDesc = {};
+    depthResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    depthResourceDesc.Alignment = 0;
+    depthResourceDesc.Width = m_width;
+    depthResourceDesc.Height = m_height;
+    depthResourceDesc.DepthOrArraySize = 1;
+    depthResourceDesc.MipLevels = 1;
+    depthResourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthResourceDesc.SampleDesc.Count = 1;
+    depthResourceDesc.SampleDesc.Quality = 0;
+    depthResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    depthResourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+    D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
+    depthOptimizedClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
+    depthOptimizedClearValue.DepthStencil.Stencil = 0;
+
+    D3D12_HEAP_PROPERTIES depthHeapProps = {};
+    depthHeapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+    ThrowIfFailed(m_device->CreateCommittedResource(
+        &depthHeapProps,
+        D3D12_HEAP_FLAG_NONE,
+        &depthResourceDesc,
+        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+        &depthOptimizedClearValue,
+        IID_PPV_ARGS(&m_depthStencilBuffer)
+    ));
+
+    m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), nullptr, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
 /**
@@ -393,27 +488,49 @@ void CGraphicsEngine::Render()
     const float clearColor[] = { 0.2f, 0.2f, 0.3f, 1.0f };
     m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
-    // --- 삼각형 렌더링 수행 영역 ---
+    // --- 큐브 렌더링 수행 영역 ---
     
-    // 0. 회전 행렬 계산 및 상수 버퍼 업데이트
-    SceneConstantBuffer cb;
+    // 0. 행렬 계산 및 상수 버퍼 업데이트
     float totalTime = m_timeManager.GetTotalTime();
-    // Z축 기준 회전 행렬 생성 (HLSL mul 순서에 맞춰 Transpose)
-    DirectX::XMMATRIX rotationMat = DirectX::XMMatrixRotationZ(totalTime);
-    DirectX::XMStoreFloat4x4(&cb.matRotation, DirectX::XMMatrixTranspose(rotationMat));
+    
+    // World: 회전 행렬
+    DirectX::XMMATRIX matWorld = DirectX::XMMatrixRotationRollPitchYaw(totalTime * 0.5f, totalTime, 0.0f);
+    
+    // View: 카메라 위치 설정
+    DirectX::XMVECTOR eyePos = DirectX::XMVectorSet(0.0f, 2.0f, -5.0f, 0.0f);
+    DirectX::XMVECTOR focusPos = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+    DirectX::XMVECTOR upDir = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    DirectX::XMMATRIX matView = DirectX::XMMatrixLookAtLH(eyePos, focusPos, upDir);
+    
+    // Projection: 원근 투영
+    float aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
+    DirectX::XMMATRIX matProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 100.0f);
+    
+    // WVP 결합 (HLSL mul 순서에 맞춰 Transpose)
+    DirectX::XMMATRIX matWVP = matWorld * matView * matProj;
+    
+    SceneConstantBuffer cb;
+    DirectX::XMStoreFloat4x4(&cb.matWVP, DirectX::XMMatrixTranspose(matWVP));
     memcpy(m_pCbvDataBegin, &cb, sizeof(cb));
 
     // 루트 파라미터 0번에 상수 버퍼 주소 연결
     m_commandList->SetGraphicsRootConstantBufferView(0, m_constantBuffer->GetGPUVirtualAddress());
 
-    // 1. 기하학적 형태 정의 (삼각형 리스트 방식으로 그릴 것을 설정)
+    // 깊이 버퍼 클리어
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dsvHeap->GetCPUDescriptorHandleForHeapStart();
+    m_commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    
+    // 렌더 타겟 및 깊이 버퍼 설정
+    m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+
+    // 1. 기하학적 형태 정의
     m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     
-    // 2. GPU에 정점 데이터 위치(버퍼 뷰) 전달
+    // 2. GPU에 정점 데이터 위치 전달
     m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
     
-    // 3. 실제로 그리기 명령 (3개의 정점으로 1개의 인스턴스 출력)
-    m_commandList->DrawInstanced(3, 1, 0, 0);
+    // 3. 큐브 그리기 (36개의 정점)
+    m_commandList->DrawInstanced(36, 1, 0, 0);
 
     // ---------------------------------
 
@@ -456,6 +573,8 @@ void CGraphicsEngine::Resize(int width, int height)
 
     m_viewport = { 0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f };
     m_scissorRect = { 0, 0, width, height };
+
+    CreateDepthStencilBuffer();
 }
 
 void CGraphicsEngine::WaitForPreviousFrame()

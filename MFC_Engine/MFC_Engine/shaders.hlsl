@@ -1,6 +1,6 @@
 cbuffer SceneConstantBuffer : register(b0)
 {
-    float4x4 matRotation;
+    float4x4 matWVP;
 };
 
 struct VS_INPUT
@@ -19,7 +19,7 @@ PS_INPUT VSMain(VS_INPUT input)
 {
     PS_INPUT result;
 
-    result.position = mul(float4(input.position, 1.0f), matRotation);
+    result.position = mul(float4(input.position, 1.0f), matWVP);
     result.color = input.color;
 
     return result;
