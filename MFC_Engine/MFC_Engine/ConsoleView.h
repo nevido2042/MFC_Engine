@@ -1,18 +1,17 @@
-﻿
 #pragma once
 
 /////////////////////////////////////////////////////////////////////////////
-// COutputList 창
+// CConsoleList 창
 
-class COutputList : public CListBox
+class CConsoleList : public CListBox
 {
 // 생성입니다.
 public:
-	COutputList() noexcept;
+	CConsoleList() noexcept;
 
 // 구현입니다.
 public:
-	virtual ~COutputList();
+	virtual ~CConsoleList();
 
 protected:
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
@@ -23,11 +22,11 @@ protected:
 	DECLARE_MESSAGE_MAP()
 };
 
-class COutputWnd : public CDockablePane
+class CConsoleView : public CDockablePane
 {
 // 생성입니다.
 public:
-	COutputWnd() noexcept;
+	CConsoleView() noexcept;
 
 	void UpdateFonts();
 
@@ -35,9 +34,9 @@ public:
 protected:
 	CMFCTabCtrl	m_wndTabs;
 
-	COutputList m_wndOutputBuild;
-	COutputList m_wndOutputDebug;
-	COutputList m_wndOutputFind;
+	CConsoleList m_wndOutputBuild;
+	CConsoleList m_wndOutputDebug;
+	CConsoleList m_wndOutputFind;
 
 protected:
 	void FillBuildWindow();
@@ -48,7 +47,7 @@ protected:
 
 // 구현입니다.
 public:
-	virtual ~COutputWnd();
+	virtual ~CConsoleView();
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
@@ -56,4 +55,3 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 };
-

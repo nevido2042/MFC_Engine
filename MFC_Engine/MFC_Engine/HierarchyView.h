@@ -1,9 +1,8 @@
-
 #pragma once
 
 #include "ViewTree.h"
 
-class CClassToolBar : public CMFCToolBar
+class CHierarchyToolBar : public CMFCToolBar
 {
 	virtual void OnUpdateCmdUI(CFrameWnd* /*pTarget*/, BOOL bDisableIfNoHndler)
 	{
@@ -17,22 +16,22 @@ class CClassToolBar : public CMFCToolBar
 #include <map>
 #include "GameObject.h"
 
-class CClassView : public CDockablePane
+class CHierarchyView : public CDockablePane
 {
 public:
-	CClassView() noexcept;
-	virtual ~CClassView();
+	CHierarchyView() noexcept;
+	virtual ~CHierarchyView();
 
 	void AdjustLayout();
 	void OnChangeVisualStyle();
 
 protected:
-	CClassToolBar m_wndToolBar;
-	CViewTree m_wndClassView;
-	CImageList m_ClassViewImages;
+	CHierarchyToolBar m_wndToolBar;
+	CViewTree m_wndHierarchyView;
+	CImageList m_HierarchyViewImages;
 	UINT m_nCurrSort;
 
-	void FillClassView();
+	void FillHierarchyView();
 	void InsertGameObject(HTREEITEM hParent, std::shared_ptr<CGameObject> pObj);
 	
 	afx_msg void OnSelChanged(NMHDR* pNMHDR, LRESULT* pResult);
@@ -48,17 +47,11 @@ protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
-	afx_msg void OnClassAddMemberFunction();
-	afx_msg void OnClassAddMemberVariable();
-	afx_msg void OnClassDefinition();
-	afx_msg void OnClassProperties();
-	afx_msg void OnNewFolder();
+	afx_msg void OnHierarchyProperties();
 	afx_msg void OnPaint();
 	afx_msg void OnSetFocus(CWnd* pOldWnd);
-	afx_msg LRESULT OnChangeActiveTab(WPARAM, LPARAM);
 	afx_msg void OnSort(UINT id);
 	afx_msg void OnUpdateSort(CCmdUI* pCmdUI);
 
 	DECLARE_MESSAGE_MAP()
 };
-

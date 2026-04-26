@@ -3,12 +3,10 @@
 //
 
 #pragma once
-#include "FileView.h"
-#include "ClassView.h"
-#include "OutputWnd.h"
-#include "PropertiesWnd.h"
-
-#include "PropertiesWnd.h"
+#include "ProjectView.h"
+#include "HierarchyView.h"
+#include "ConsoleView.h"
+#include "InspectorView.h"
 
 class CMainFrame : public CMDIFrameWndEx
 {
@@ -18,7 +16,8 @@ public:
 
 // 특성입니다.
 public:
-	CPropertiesWnd* GetPropertiesWnd() { return &m_wndProperties; }
+	CInspectorView* GetInspectorView() { return &m_wndInspectorView; }
+	CHierarchyView* GetHierarchyView() { return &m_wndHierarchyView; }
 
 // 작업입니다.
 public:
@@ -41,10 +40,10 @@ protected:  // 컨트롤 모음이 포함된 멤버입니다.
 	CMFCToolBar       m_wndToolBar;
 	CMFCStatusBar     m_wndStatusBar;
 	CMFCToolBarImages m_UserImages;
-	CFileView         m_wndFileView;
-	CClassView        m_wndClassView;
-	COutputWnd        m_wndOutput;
-	CPropertiesWnd    m_wndProperties;
+	CProjectView      m_wndProjectView;
+	CHierarchyView    m_wndHierarchyView;
+	CConsoleView      m_wndConsoleView;
+	CInspectorView    m_wndInspectorView;
 
 // 생성된 메시지 맵 함수
 protected:

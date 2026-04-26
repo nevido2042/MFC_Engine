@@ -1,8 +1,7 @@
-
 #include "pch.h"
 #include "framework.h"
 
-#include "PropertiesWnd.h"
+#include "InspectorView.h"
 #include "Resource.h"
 #include "MainFrm.h"
 #include "MFC_Engine.h"
@@ -14,18 +13,18 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
-// CResourceViewBar
+// CInspectorView
 
-CPropertiesWnd::CPropertiesWnd() noexcept
+CInspectorView::CInspectorView() noexcept
 {
 	m_nComboHeight = 0;
 }
 
-CPropertiesWnd::~CPropertiesWnd()
+CInspectorView::~CInspectorView()
 {
 }
 
-BEGIN_MESSAGE_MAP(CPropertiesWnd, CDockablePane)
+BEGIN_MESSAGE_MAP(CInspectorView, CDockablePane)
 	ON_WM_CREATE()
 	ON_WM_SIZE()
 	ON_COMMAND(ID_EXPAND_ALL, OnExpandAllProperties)
@@ -42,9 +41,9 @@ BEGIN_MESSAGE_MAP(CPropertiesWnd, CDockablePane)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
-// CResourceViewBar 메시지 처리기
+// CInspectorView 메시지 처리기
 
-void CPropertiesWnd::AdjustLayout()
+void CInspectorView::AdjustLayout()
 {
 	if (GetSafeHwnd () == nullptr || (AfxGetMainWnd() != nullptr && AfxGetMainWnd()->IsIconic()))
 	{
@@ -61,7 +60,7 @@ void CPropertiesWnd::AdjustLayout()
 	m_wndPropList.SetWindowPos(nullptr, rectClient.left, rectClient.top + m_nComboHeight + cyTlb, rectClient.Width(), rectClient.Height() -(m_nComboHeight+cyTlb), SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
-int CPropertiesWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
+int CInspectorView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (CDockablePane::OnCreate(lpCreateStruct) == -1)
 		return -1;
@@ -78,8 +77,6 @@ int CPropertiesWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;      // 만들지 못했습니다.
 	}
 
-	// m_wndObjectCombo.AddString(_T("애플리케이션"));
-	// m_wndObjectCombo.AddString(_T("속성 창"));
 	m_wndObjectCombo.SetCurSel(0);
 
 	CRect rectCombo;
@@ -111,52 +108,48 @@ int CPropertiesWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	return 0;
 }
 
-void CPropertiesWnd::OnSize(UINT nType, int cx, int cy)
+void CInspectorView::OnSize(UINT nType, int cx, int cy)
 {
 	CDockablePane::OnSize(nType, cx, cy);
 	AdjustLayout();
 }
 
-void CPropertiesWnd::OnExpandAllProperties()
+void CInspectorView::OnExpandAllProperties()
 {
 	m_wndPropList.ExpandAll();
 }
 
-void CPropertiesWnd::OnUpdateExpandAllProperties(CCmdUI* /* pCmdUI */)
+void CInspectorView::OnUpdateExpandAllProperties(CCmdUI* /* pCmdUI */)
 {
 }
 
-void CPropertiesWnd::OnSortProperties()
+void CInspectorView::OnSortProperties()
 {
 	m_wndPropList.SetAlphabeticMode(!m_wndPropList.IsAlphabeticMode());
 }
 
-void CPropertiesWnd::OnUpdateSortProperties(CCmdUI* pCmdUI)
+void CInspectorView::OnUpdateSortProperties(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_wndPropList.IsAlphabeticMode());
 }
 
-void CPropertiesWnd::OnProperties1()
+void CInspectorView::OnProperties1()
 {
-	// TODO: 여기에 명령 처리기 코드를 추가합니다.
 }
 
-void CPropertiesWnd::OnUpdateProperties1(CCmdUI* /*pCmdUI*/)
+void CInspectorView::OnUpdateProperties1(CCmdUI* /*pCmdUI*/)
 {
-	// TODO: 여기에 명령 업데이트 UI 처리기 코드를 추가합니다.
 }
 
-void CPropertiesWnd::OnProperties2()
+void CInspectorView::OnProperties2()
 {
-	// TODO: 여기에 명령 처리기 코드를 추가합니다.
 }
 
-void CPropertiesWnd::OnUpdateProperties2(CCmdUI* /*pCmdUI*/)
+void CInspectorView::OnUpdateProperties2(CCmdUI* /*pCmdUI*/)
 {
-	// TODO: 여기에 명령 업데이트 UI 처리기 코드를 추가합니다.
 }
 
-void CPropertiesWnd::SetSelectedGameObject(std::shared_ptr<CGameObject> pObj)
+void CInspectorView::SetSelectedGameObject(std::shared_ptr<CGameObject> pObj)
 {
 	m_pSelectedObj = pObj;
 	if (m_pSelectedObj)
@@ -169,7 +162,7 @@ void CPropertiesWnd::SetSelectedGameObject(std::shared_ptr<CGameObject> pObj)
 	InitPropList(); // 리스트 갱신
 }
 
-void CPropertiesWnd::InitPropList()
+void CInspectorView::InitPropList()
 {
 	SetPropListFont();
 
@@ -212,7 +205,7 @@ void CPropertiesWnd::InitPropList()
 	pTransformGroup->Expand(TRUE);
 }
 
-LRESULT CPropertiesWnd::OnPropertyChanged(WPARAM, LPARAM lParam)
+LRESULT CInspectorView::OnPropertyChanged(WPARAM, LPARAM lParam)
 {
 	CMFCPropertyGridProperty* pProp = (CMFCPropertyGridProperty*)lParam;
 	if (!pProp || !m_pSelectedObj) return 0;
@@ -251,19 +244,19 @@ LRESULT CPropertiesWnd::OnPropertyChanged(WPARAM, LPARAM lParam)
 	return 0;
 }
 
-void CPropertiesWnd::OnSetFocus(CWnd* pOldWnd)
+void CInspectorView::OnSetFocus(CWnd* pOldWnd)
 {
 	CDockablePane::OnSetFocus(pOldWnd);
 	m_wndPropList.SetFocus();
 }
 
-void CPropertiesWnd::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
+void CInspectorView::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
 {
 	CDockablePane::OnSettingChange(uFlags, lpszSection);
 	SetPropListFont();
 }
 
-void CPropertiesWnd::SetPropListFont()
+void CInspectorView::SetPropListFont()
 {
 	::DeleteObject(m_fntPropList.Detach());
 

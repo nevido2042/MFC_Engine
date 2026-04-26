@@ -1,4 +1,3 @@
-
 #pragma once
 
 class CPropertiesToolBar : public CMFCToolBar
@@ -14,11 +13,11 @@ public:
 
 #include "GameObject.h"
 
-class CPropertiesWnd : public CDockablePane
+class CInspectorView : public CDockablePane
 {
 // 생성입니다.
 public:
-	CPropertiesWnd() noexcept;
+	CInspectorView() noexcept;
 
 	void AdjustLayout();
 
@@ -45,7 +44,7 @@ protected:
 
 // 구현입니다.
 public:
-	virtual ~CPropertiesWnd();
+	virtual ~CInspectorView();
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
@@ -68,4 +67,3 @@ protected:
 
 	int m_nComboHeight;
 };
-

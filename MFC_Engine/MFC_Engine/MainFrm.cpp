@@ -118,20 +118,20 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	}
 
-	m_wndClassView.EnableDocking(CBRS_ALIGN_ANY);
-	m_wndProperties.EnableDocking(CBRS_ALIGN_ANY);
-	m_wndFileView.EnableDocking(CBRS_ALIGN_ANY);
-	m_wndOutput.EnableDocking(CBRS_ALIGN_ANY);
+	m_wndHierarchyView.EnableDocking(CBRS_ALIGN_ANY);
+	m_wndInspectorView.EnableDocking(CBRS_ALIGN_ANY);
+	m_wndProjectView.EnableDocking(CBRS_ALIGN_ANY);
+	m_wndConsoleView.EnableDocking(CBRS_ALIGN_ANY);
 
 	// 좌측에 Hierarchy 배치
-	DockPane(&m_wndClassView);
+	DockPane(&m_wndHierarchyView);
 	// 우측에 Inspector 배치
-	DockPane(&m_wndProperties);
+	DockPane(&m_wndInspectorView);
 	// 하단에 Project 배치
-	DockPane(&m_wndFileView);
+	DockPane(&m_wndProjectView);
 	// Project와 Console을 탭으로 묶음
 	CDockablePane* pTabbedBar = nullptr;
-	m_wndOutput.AttachToTabWnd(&m_wndFileView, DM_SHOW, TRUE, &pTabbedBar);
+	m_wndConsoleView.AttachToTabWnd(&m_wndProjectView, DM_SHOW, TRUE, &pTabbedBar);
 
 	// 보관된 값에 따라 비주얼 관리자 및 스타일을 설정합니다.
 	OnApplicationLook(theApp.m_nAppLook);
@@ -200,29 +200,29 @@ BOOL CMainFrame::CreateDockingWindows()
 {
 	//BOOL bNameValid;
 
-	// Hierarchy (기존 클래스 뷰)
-	if (!m_wndClassView.Create(_T("Hierarchy"), this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_CLASSVIEW, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_LEFT | CBRS_FLOAT_MULTI))
+	// Hierarchy
+	if (!m_wndHierarchyView.Create(_T("Hierarchy"), this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_CLASSVIEW, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_LEFT | CBRS_FLOAT_MULTI))
 	{
 		TRACE0("Hierarchy 창을 만들지 못했습니다.\n");
 		return FALSE;
 	}
 
-	// Project (기존 파일 뷰)
-	if (!m_wndFileView.Create(_T("Project"), this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_FILEVIEW, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_LEFT| CBRS_FLOAT_MULTI))
+	// Project
+	if (!m_wndProjectView.Create(_T("Project"), this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_FILEVIEW, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_LEFT| CBRS_FLOAT_MULTI))
 	{
 		TRACE0("Project 창을 만들지 못했습니다.\n");
 		return FALSE;
 	}
 
-	// Console (기존 출력 창)
-	if (!m_wndOutput.Create(_T("Console"), this, CRect(0, 0, 100, 100), TRUE, ID_VIEW_OUTPUTWND, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_BOTTOM | CBRS_FLOAT_MULTI))
+	// Console
+	if (!m_wndConsoleView.Create(_T("Console"), this, CRect(0, 0, 100, 100), TRUE, ID_VIEW_OUTPUTWND, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_BOTTOM | CBRS_FLOAT_MULTI))
 	{
 		TRACE0("Console 창을 만들지 못했습니다.\n");
 		return FALSE;
 	}
 
-	// Inspector (기존 속성 창)
-	if (!m_wndProperties.Create(_T("Inspector"), this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_PROPERTIESWND, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_RIGHT | CBRS_FLOAT_MULTI))
+	// Inspector
+	if (!m_wndInspectorView.Create(_T("Inspector"), this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_PROPERTIESWND, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_RIGHT | CBRS_FLOAT_MULTI))
 	{
 		TRACE0("Inspector 창을 만들지 못했습니다.\n");
 		return FALSE;
@@ -235,16 +235,16 @@ BOOL CMainFrame::CreateDockingWindows()
 void CMainFrame::SetDockingWindowIcons(BOOL bHiColorIcons)
 {
 	HICON hFileViewIcon = (HICON) ::LoadImage(::AfxGetResourceHandle(), MAKEINTRESOURCE(bHiColorIcons ? IDI_FILE_VIEW_HC : IDI_FILE_VIEW), IMAGE_ICON, ::GetSystemMetrics(SM_CXSMICON), ::GetSystemMetrics(SM_CYSMICON), 0);
-	m_wndFileView.SetIcon(hFileViewIcon, FALSE);
+	m_wndProjectView.SetIcon(hFileViewIcon, FALSE);
 
 	HICON hClassViewIcon = (HICON) ::LoadImage(::AfxGetResourceHandle(), MAKEINTRESOURCE(bHiColorIcons ? IDI_CLASS_VIEW_HC : IDI_CLASS_VIEW), IMAGE_ICON, ::GetSystemMetrics(SM_CXSMICON), ::GetSystemMetrics(SM_CYSMICON), 0);
-	m_wndClassView.SetIcon(hClassViewIcon, FALSE);
+	m_wndHierarchyView.SetIcon(hClassViewIcon, FALSE);
 
 	HICON hOutputBarIcon = (HICON) ::LoadImage(::AfxGetResourceHandle(), MAKEINTRESOURCE(bHiColorIcons ? IDI_OUTPUT_WND_HC : IDI_OUTPUT_WND), IMAGE_ICON, ::GetSystemMetrics(SM_CXSMICON), ::GetSystemMetrics(SM_CYSMICON), 0);
-	m_wndOutput.SetIcon(hOutputBarIcon, FALSE);
+	m_wndConsoleView.SetIcon(hOutputBarIcon, FALSE);
 
 	HICON hPropertiesBarIcon = (HICON) ::LoadImage(::AfxGetResourceHandle(), MAKEINTRESOURCE(bHiColorIcons ? IDI_PROPERTIES_WND_HC : IDI_PROPERTIES_WND), IMAGE_ICON, ::GetSystemMetrics(SM_CXSMICON), ::GetSystemMetrics(SM_CYSMICON), 0);
-	m_wndProperties.SetIcon(hPropertiesBarIcon, FALSE);
+	m_wndInspectorView.SetIcon(hPropertiesBarIcon, FALSE);
 
 }
 
@@ -362,7 +362,7 @@ void CMainFrame::OnApplicationLook(UINT id)
 		CDockingManager::SetDockingMode(DT_SMART);
 	}
 
-	m_wndOutput.UpdateFonts();
+	m_wndConsoleView.UpdateFonts();
 	RedrawWindow(nullptr, nullptr, RDW_ALLCHILDREN | RDW_INVALIDATE | RDW_UPDATENOW | RDW_FRAME | RDW_ERASE);
 
 	theApp.WriteInt(_T("ApplicationLook"), theApp.m_nAppLook);
@@ -406,5 +406,5 @@ BOOL CMainFrame::LoadFrame(UINT nIDResource, DWORD dwDefaultStyle, CWnd* pParent
 void CMainFrame::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
 {
 	CMDIFrameWndEx::OnSettingChange(uFlags, lpszSection);
-	m_wndOutput.UpdateFonts();
+	m_wndConsoleView.UpdateFonts();
 }

@@ -39,19 +39,19 @@
     <ClInclude Include="Resource.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="FileView.h">
+    <ClInclude Include="ProjectView.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="ClassView.h">
+    <ClInclude Include="HierarchyView.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="ViewTree.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="OutputWnd.h">
+    <ClInclude Include="ConsoleView.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="PropertiesWnd.h">
+    <ClInclude Include="InspectorView.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
@@ -89,19 +89,19 @@
     <ClCompile Include="MFC_EngineView.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="FileView.cpp">
+    <ClCompile Include="ProjectView.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="ClassView.cpp">
+    <ClCompile Include="HierarchyView.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="ViewTree.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="OutputWnd.cpp">
+    <ClCompile Include="ConsoleView.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="PropertiesWnd.cpp">
+    <ClCompile Include="InspectorView.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">

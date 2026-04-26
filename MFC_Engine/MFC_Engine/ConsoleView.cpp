@@ -1,8 +1,7 @@
-﻿
 #include "pch.h"
 #include "framework.h"
 
-#include "OutputWnd.h"
+#include "ConsoleView.h"
 #include "Resource.h"
 #include "MainFrm.h"
 
@@ -13,22 +12,22 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
-// COutputBar
+// CConsoleView
 
-COutputWnd::COutputWnd() noexcept
+CConsoleView::CConsoleView() noexcept
 {
 }
 
-COutputWnd::~COutputWnd()
+CConsoleView::~CConsoleView()
 {
 }
 
-BEGIN_MESSAGE_MAP(COutputWnd, CDockablePane)
+BEGIN_MESSAGE_MAP(CConsoleView, CDockablePane)
 	ON_WM_CREATE()
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
-int COutputWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
+int CConsoleView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (CDockablePane::OnCreate(lpCreateStruct) == -1)
 		return -1;
@@ -78,7 +77,7 @@ int COutputWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	return 0;
 }
 
-void COutputWnd::OnSize(UINT nType, int cx, int cy)
+void CConsoleView::OnSize(UINT nType, int cx, int cy)
 {
 	CDockablePane::OnSize(nType, cx, cy);
 
@@ -86,7 +85,7 @@ void COutputWnd::OnSize(UINT nType, int cx, int cy)
 	m_wndTabs.SetWindowPos (nullptr, -1, -1, cx, cy, SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
-void COutputWnd::AdjustHorzScroll(CListBox& wndListBox)
+void CConsoleView::AdjustHorzScroll(CListBox& wndListBox)
 {
 	CClientDC dc(this);
 	CFont* pOldFont = dc.SelectObject(&afxGlobalData.fontRegular);
@@ -105,28 +104,28 @@ void COutputWnd::AdjustHorzScroll(CListBox& wndListBox)
 	dc.SelectObject(pOldFont);
 }
 
-void COutputWnd::FillBuildWindow()
+void CConsoleView::FillBuildWindow()
 {
 	m_wndOutputBuild.AddString(_T("여기에 빌드 출력이 표시됩니다."));
 	m_wndOutputBuild.AddString(_T("출력이 목록 뷰 행에 표시되지만"));
 	m_wndOutputBuild.AddString(_T("표시 방법을 원하는 대로 변경할 수 있습니다."));
 }
 
-void COutputWnd::FillDebugWindow()
+void CConsoleView::FillDebugWindow()
 {
 	m_wndOutputDebug.AddString(_T("여기에 디버그 출력이 표시됩니다."));
 	m_wndOutputDebug.AddString(_T("출력이 목록 뷰 행에 표시되지만"));
 	m_wndOutputDebug.AddString(_T("표시 방법을 원하는 대로 변경할 수 있습니다."));
 }
 
-void COutputWnd::FillFindWindow()
+void CConsoleView::FillFindWindow()
 {
 	m_wndOutputFind.AddString(_T("여기에 찾기 출력이 표시됩니다."));
 	m_wndOutputFind.AddString(_T("출력이 목록 뷰 행에 표시되지만"));
 	m_wndOutputFind.AddString(_T("표시 방법을 원하는 대로 변경할 수 있습니다."));
 }
 
-void COutputWnd::UpdateFonts()
+void CConsoleView::UpdateFonts()
 {
 	m_wndOutputBuild.SetFont(&afxGlobalData.fontRegular);
 	m_wndOutputDebug.SetFont(&afxGlobalData.fontRegular);
@@ -134,17 +133,17 @@ void COutputWnd::UpdateFonts()
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// COutputList1
+// CConsoleList
 
-COutputList::COutputList() noexcept
+CConsoleList::CConsoleList() noexcept
 {
 }
 
-COutputList::~COutputList()
+CConsoleList::~CConsoleList()
 {
 }
 
-BEGIN_MESSAGE_MAP(COutputList, CListBox)
+BEGIN_MESSAGE_MAP(CConsoleList, CListBox)
 	ON_WM_CONTEXTMENU()
 	ON_COMMAND(ID_EDIT_COPY, OnEditCopy)
 	ON_COMMAND(ID_EDIT_CLEAR, OnEditClear)
@@ -152,9 +151,9 @@ BEGIN_MESSAGE_MAP(COutputList, CListBox)
 	ON_WM_WINDOWPOSCHANGING()
 END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
-// COutputList 메시지 처리기
+// CConsoleList 메시지 처리기
 
-void COutputList::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
+void CConsoleList::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 {
 	CMenu menu;
 	menu.LoadMenu(IDR_OUTPUT_POPUP);
@@ -175,17 +174,17 @@ void COutputList::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 	SetFocus();
 }
 
-void COutputList::OnEditCopy()
+void CConsoleList::OnEditCopy()
 {
 	MessageBox(_T("출력 복사"));
 }
 
-void COutputList::OnEditClear()
+void CConsoleList::OnEditClear()
 {
 	MessageBox(_T("출력 지우기"));
 }
 
-void COutputList::OnViewOutput()
+void CConsoleList::OnViewOutput()
 {
 	CDockablePane* pParentBar = DYNAMIC_DOWNCAST(CDockablePane, GetOwner());
 	CMDIFrameWndEx* pMainFrame = DYNAMIC_DOWNCAST(CMDIFrameWndEx, GetTopLevelFrame());
