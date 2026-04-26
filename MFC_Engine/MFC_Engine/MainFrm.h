@@ -7,6 +7,8 @@
 #include "HierarchyView.h"
 #include "ConsoleView.h"
 #include "InspectorView.h"
+#include "SceneView.h"
+#include "GameView.h"
 
 class CMainFrame : public CMDIFrameWndEx
 {
@@ -44,6 +46,8 @@ protected:  // 컨트롤 모음이 포함된 멤버입니다.
 	CHierarchyView    m_wndHierarchyView;
 	CConsoleView      m_wndConsoleView;
 	CInspectorView    m_wndInspectorView;
+	CSceneView        m_wndSceneView;
+	CGameView         m_wndGameView;
 
 // 생성된 메시지 맵 함수
 protected:

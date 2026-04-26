@@ -199,6 +199,8 @@
     <ClInclude Include="ConsoleView.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="InspectorView.h" />
+    <ClInclude Include="SceneView.h" />
+    <ClInclude Include="GameView.h" />
     <ClInclude Include="Resource.h" />
     <None Include="shaders.hlsl" />
     <ClInclude Include="TimeManager.h" />
@@ -227,6 +229,8 @@
     </ClCompile>
     <ClCompile Include="ConsoleView.cpp" />
     <ClCompile Include="InspectorView.cpp" />
+    <ClCompile Include="SceneView.cpp" />
+    <ClCompile Include="GameView.cpp" />
     <ClCompile Include="TimeManager.cpp" />
     <ClCompile Include="ViewTree.cpp" />
     <ClCompile Include="GraphicsEngine.cpp" />

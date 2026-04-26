@@ -122,6 +122,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_wndInspectorView.EnableDocking(CBRS_ALIGN_ANY);
 	m_wndProjectView.EnableDocking(CBRS_ALIGN_ANY);
 	m_wndConsoleView.EnableDocking(CBRS_ALIGN_ANY);
+	m_wndSceneView.EnableDocking(CBRS_ALIGN_ANY);
+	m_wndGameView.EnableDocking(CBRS_ALIGN_ANY);
 
 	// 좌측에 Hierarchy 배치
 	DockPane(&m_wndHierarchyView);
@@ -132,6 +134,10 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	// Project와 Console을 탭으로 묶음
 	CDockablePane* pTabbedBar = nullptr;
 	m_wndConsoleView.AttachToTabWnd(&m_wndProjectView, DM_SHOW, TRUE, &pTabbedBar);
+
+	// Scene 뷰와 Game 뷰를 상단에 배치
+	DockPane(&m_wndSceneView);
+	m_wndGameView.AttachToTabWnd(&m_wndSceneView, DM_SHOW, TRUE, &pTabbedBar);
 
 	// 보관된 값에 따라 비주얼 관리자 및 스타일을 설정합니다.
 	OnApplicationLook(theApp.m_nAppLook);
@@ -211,6 +217,20 @@ BOOL CMainFrame::CreateDockingWindows()
 	if (!m_wndProjectView.Create(_T("Project"), this, CRect(0, 0, 200, 200), TRUE, ID_VIEW_FILEVIEW, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_LEFT| CBRS_FLOAT_MULTI))
 	{
 		TRACE0("Project 창을 만들지 못했습니다.\n");
+		return FALSE;
+	}
+
+	// Scene
+	if (!m_wndSceneView.Create(_T("Scene"), this, CRect(0, 0, 800, 600), TRUE, ID_VIEW_CLASSVIEW + 10, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_TOP | CBRS_FLOAT_MULTI))
+	{
+		TRACE0("Scene 창을 만들지 못했습니다.\n");
+		return FALSE;
+	}
+
+	// Game
+	if (!m_wndGameView.Create(_T("Game"), this, CRect(0, 0, 800, 600), TRUE, ID_VIEW_CLASSVIEW + 11, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_TOP | CBRS_FLOAT_MULTI))
+	{
+		TRACE0("Game 창을 만들지 못했습니다.\n");
 		return FALSE;
 	}
 
