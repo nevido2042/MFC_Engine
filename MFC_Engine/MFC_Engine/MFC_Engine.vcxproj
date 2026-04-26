@@ -201,6 +201,7 @@
     <ClInclude Include="GameView.h" />
     <ClInclude Include="Resource.h" />
     <None Include="shaders.hlsl" />
+    <None Include="Picking.hlsl" />
     <ClInclude Include="TimeManager.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="ViewTree.h" />
@@ -216,6 +217,7 @@
     <ClInclude Include="EngineStructs.h" />
     <ClInclude Include="PrimitiveGenerator.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="Picking.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HierarchyView.cpp" />
@@ -241,6 +243,7 @@
     <ClCompile Include="PrimitiveGenerator.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Transform.cpp" />
+    <ClCompile Include="Picking.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MFCEngine.rc" />

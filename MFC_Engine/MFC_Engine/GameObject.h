@@ -12,6 +12,7 @@ public:
 
     static std::shared_ptr<CGameObject> Create(const std::wstring& name);
 
+    UINT GetID() const { return m_id; }
     const std::wstring& GetName() const { return m_name; }
     void SetName(const std::wstring& name) { m_name = name; }
 
@@ -45,6 +46,8 @@ public:
     }
 
 private:
+    static UINT s_nextId;
+    UINT m_id;
     std::wstring m_name;
     CGameObject* m_pParent = nullptr;
     std::shared_ptr<CTransform> m_pTransform;

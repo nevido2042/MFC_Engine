@@ -25,6 +25,8 @@ public:
 	void AdjustLayout();
 	void OnChangeVisualStyle();
 
+	void SelectGameObject(std::shared_ptr<CGameObject> pObj);
+
 protected:
 	CHierarchyToolBar m_wndToolBar;
 	CViewTree m_wndHierarchyView;

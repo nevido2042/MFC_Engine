@@ -2,8 +2,11 @@
 #include "GameObject.h"
 #include <algorithm>
 
+UINT CGameObject::s_nextId = 1;
+
 CGameObject::CGameObject(const std::wstring& name)
     : m_name(name)
+    , m_id(s_nextId++)
 {
     m_pTransform = std::make_shared<CTransform>(this);
     m_components.push_back(m_pTransform);

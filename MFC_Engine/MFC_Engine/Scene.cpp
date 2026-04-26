@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Scene.h"
 #include <algorithm>
+#include <functional>
 #include "MeshFilter.h"
 #include "MeshRenderer.h"
 
@@ -34,4 +35,20 @@ void CScene::RemoveGameObject(std::shared_ptr<CGameObject> obj)
     {
         pParent->RemoveChild(obj);
     }
+}
+
+std::shared_ptr<CGameObject> CScene::FindGameObjectByID(UINT id)
+{
+    std::function<std::shared_ptr<CGameObject>(const std::vector<std::shared_ptr<CGameObject>>&)> search = 
+        [&](const std::vector<std::shared_ptr<CGameObject>>& list) -> std::shared_ptr<CGameObject>
+    {
+        for (auto& obj : list)
+        {
+            if (obj->GetID() == id) return obj;
+            auto found = search(obj->GetChildren());
+            if (found) return found;
+        }
+        return nullptr;
+    };
+    return search(m_gameObjects);
 }

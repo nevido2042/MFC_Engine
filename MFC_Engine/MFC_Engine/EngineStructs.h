@@ -18,5 +18,6 @@ struct Vertex
 struct SceneConstantBuffer
 {
     DirectX::XMFLOAT4X4 matWVP;
-    float padding[48]; // 256바이트 패딩
+    DirectX::XMFLOAT4 objectColorID;
+    float padding[44]; // 256바이트 패딩
 };

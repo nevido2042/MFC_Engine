@@ -33,6 +33,7 @@ BEGIN_MESSAGE_MAP(CSceneView, CDockablePane)
 	ON_WM_DESTROY()
 	ON_WM_RBUTTONDOWN()
 	ON_WM_RBUTTONUP()
+	ON_WM_LBUTTONDOWN()
 	ON_WM_MOUSEMOVE()
 	ON_WM_CONTEXTMENU()
 END_MESSAGE_MAP()
@@ -101,6 +102,26 @@ void CSceneView::OnRButtonUp(UINT nFlags, CPoint point)
 	m_bRButtonDown = false;
 	ReleaseCapture();
 	CDockablePane::OnRButtonUp(nFlags, point);
+}
+
+void CSceneView::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	if (m_pEngine)
+	{
+		UINT pickedID = m_pEngine->Pick(point.x, point.y);
+
+		CMainFrame* pMainFrame = (CMainFrame*)AfxGetMainWnd();
+		if (pMainFrame)
+		{
+			auto pScene = CSceneManager::GetInstance().GetActiveScene();
+			if (pScene)
+			{
+				auto pObj = pScene->FindGameObjectByID(pickedID);
+				pMainFrame->GetHierarchyView()->SelectGameObject(pObj);
+			}
+		}
+	}
+	CDockablePane::OnLButtonDown(nFlags, point);
 }
 
 void CSceneView::OnMouseMove(UINT nFlags, CPoint point)

@@ -4,6 +4,7 @@
 #include "Camera.h"
 
 class CScene;
+class CPicking;
 #include <DirectXMath.h>
 #include <mutex>
 #include <map>
@@ -27,6 +28,8 @@ public:
     void Render(std::shared_ptr<CScene> pScene);
     void Resize(int width, int height);
     float GetFPS() const { return m_timeManager.GetFPS(); }
+    
+    UINT Pick(int x, int y);
 
     // --- 카메라 제어 ---
     void MoveCamera(float forward, float right, float up, float deltaTime);
@@ -47,9 +50,13 @@ private:
     // --- 렌더링 파이프라인 구축 관련 함수 ---
     void CreateRootSignature();     // 쉐이더 자원 바인딩 레이아웃 생성
     void CreatePipelineState();     // 그래픽 파이프라인 상태(PSO) 생성
+    void CreatePickingPipelineState(); // 피킹 렌더 파이프라인 생성
     void CreatePrimitiveMeshes();   // 기본 도형 메쉬 생성
     void CreateConstantBuffer();    // 상수 버퍼 생성
     void CreateDepthStencilBuffer(); // 깊이 버퍼 생성
+
+    void RenderPickingPass(std::shared_ptr<class CScene> pScene);
+    void RenderGameObjectForPicking(std::shared_ptr<class CGameObject> pObj, int& objIndex);
 
     void RenderGameObject(std::shared_ptr<class CGameObject> pObj, int& objIndex);
     void WaitForPreviousFrame();
@@ -76,6 +83,9 @@ private:
     // --- 렌더링 파이프라인 구축 ---
     ComPtr<ID3D12RootSignature> m_rootSignature; // 루트 시그니처
     ComPtr<ID3D12PipelineState> m_pipelineState; // 파이프라인 상태 객체(PSO)
+    ComPtr<ID3D12PipelineState> m_pickingPipelineState; // 피킹 파이프라인 상태 객체(PSO)
+    
+    std::unique_ptr<CPicking> m_pPicking;
     
     // 메쉬 캐시
     std::map<std::wstring, std::shared_ptr<class CMesh>> m_meshes;

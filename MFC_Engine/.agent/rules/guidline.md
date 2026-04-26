@@ -46,7 +46,16 @@ trigger: always_on
 
 ---
 
-## 4. 적용 예시 (Sample Code)
+## 4. 중괄호 및 코드 작성 스타일 (Brace Style)
+본 프로젝트는 코드의 구조적 명확성을 위해 **Allman Style (줄 바꿈 중괄호)**을 준수합니다.
+
+규칙: 클래스, 함수, 조건문, 반복문의 여는 중괄호({)는 반드시 새로운 줄에 작성합니다.
+
+들여쓰기: 중괄호 내부의 코드는 한 단계 들여씁니다.
+
+---
+
+## 5. 적용 예시 (Sample Code)
 
 ```cpp
 class CCharacterBase

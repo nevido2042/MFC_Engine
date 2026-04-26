@@ -7,6 +7,8 @@
 #include "MeshFilter.h"
 #include "MeshRenderer.h"
 #include "Mesh.h"
+#include "Picking.h"
+#include "SceneManager.h"
 
 // 쉐이더 컴파일 라이브러리 링크
 #pragma comment(lib, "d3dcompiler.lib")
@@ -60,9 +62,13 @@ bool CGraphicsEngine::Initialize(HWND hWnd, int width, int height)
     // --- 렌더링 파이프라인 구축 ---
     CreateRootSignature();
     CreatePipelineState();
+    CreatePickingPipelineState();
     CreatePrimitiveMeshes();
     CreateConstantBuffer();
     CreateDepthStencilBuffer();
+
+    m_pPicking = std::make_unique<CPicking>();
+    m_pPicking->Initialize(m_device.Get(), m_width, m_height);
 
     // 초기 명령 리스트 생성 및 닫기
     ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
@@ -280,6 +286,72 @@ void CGraphicsEngine::CreatePipelineState()
     psoDesc.SampleDesc.Count = 1;
 
     ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
+}
+
+void CGraphicsEngine::CreatePickingPipelineState()
+{
+    ComPtr<ID3DBlob> vertexShader;
+    ComPtr<ID3DBlob> pixelShader;
+
+#if defined(_DEBUG)
+    UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+    UINT compileFlags = 0;
+#endif
+
+    ThrowIfFailed(D3DCompileFromFile(L"Picking.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
+    ThrowIfFailed(D3DCompileFromFile(L"Picking.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+
+    D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+    };
+
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+    psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
+    psoDesc.pRootSignature = m_rootSignature.Get();
+    psoDesc.VS = { vertexShader->GetBufferPointer(), vertexShader->GetBufferSize() };
+    psoDesc.PS = { pixelShader->GetBufferPointer(), pixelShader->GetBufferSize() };
+    
+    psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+    psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+    psoDesc.RasterizerState.FrontCounterClockwise = FALSE;
+    psoDesc.RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+    psoDesc.RasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+    psoDesc.RasterizerState.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+    psoDesc.RasterizerState.DepthClipEnable = TRUE;
+    psoDesc.RasterizerState.MultisampleEnable = FALSE;
+    psoDesc.RasterizerState.AntialiasedLineEnable = FALSE;
+    psoDesc.RasterizerState.ForcedSampleCount = 0;
+    psoDesc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+    psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
+    psoDesc.BlendState.IndependentBlendEnable = FALSE;
+    const D3D12_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
+    {
+        FALSE,FALSE,
+        D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+        D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+        D3D12_LOGIC_OP_NOOP,
+        D3D12_COLOR_WRITE_ENABLE_ALL,
+    };
+    for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
+        psoDesc.BlendState.RenderTarget[i] = defaultRenderTargetBlendDesc;
+
+    psoDesc.DepthStencilState.DepthEnable = TRUE;
+    psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+    psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+    psoDesc.DepthStencilState.StencilEnable = FALSE;
+    
+    psoDesc.SampleMask = UINT_MAX;
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    psoDesc.NumRenderTargets = 1;
+    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    psoDesc.SampleDesc.Count = 1;
+
+    ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pickingPipelineState)));
 }
 
 void CGraphicsEngine::CreatePrimitiveMeshes()
@@ -503,6 +575,8 @@ void CGraphicsEngine::Resize(int width, int height)
     m_scissorRect = { 0, 0, width, height };
 
     CreateDepthStencilBuffer();
+
+    if (m_pPicking) m_pPicking->Resize(m_device.Get(), width, height);
 }
 
 
@@ -552,6 +626,108 @@ void CGraphicsEngine::RenderGameObject(std::shared_ptr<CGameObject> pObj, int& o
     {
         RenderGameObject(pChild, objIndex);
     }
+}
+
+void CGraphicsEngine::RenderPickingPass(std::shared_ptr<CScene> pScene)
+{
+    m_commandList->RSSetViewports(1, &m_viewport);
+    m_commandList->RSSetScissorRects(1, &m_scissorRect);
+
+    auto rtv = m_pPicking->GetRTV();
+    auto dsv = m_pPicking->GetDSV();
+
+    m_commandList->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
+    
+    const float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    m_commandList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
+    m_commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+    m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+    m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    if (pScene)
+    {
+        int objIndex = 0;
+        for (auto& pObj : pScene->GetGameObjects())
+        {
+            RenderGameObjectForPicking(pObj, objIndex);
+        }
+    }
+}
+
+void CGraphicsEngine::RenderGameObjectForPicking(std::shared_ptr<CGameObject> pObj, int& objIndex)
+{
+    if (objIndex >= 1024) return;
+
+    auto pRenderer = pObj->GetComponent<CMeshRenderer>();
+    if (pRenderer && pRenderer->m_isEnabled)
+    {
+        auto pFilter = pObj->GetComponent<CMeshFilter>();
+        if (pFilter)
+        {
+            auto pTransform = pObj->GetTransform();
+            if (pTransform)
+            {
+                DirectX::XMMATRIX matWorld = pTransform->GetWorldMatrix();
+                DirectX::XMMATRIX matView = m_camera.GetViewMatrix();
+                float aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
+                DirectX::XMMATRIX matProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 100.0f);
+
+                DirectX::XMMATRIX matWVP = matWorld * matView * matProj;
+
+                SceneConstantBuffer cb;
+                DirectX::XMStoreFloat4x4(&cb.matWVP, DirectX::XMMatrixTranspose(matWVP));
+                
+                UINT id = pObj->GetID();
+                cb.objectColorID.x = (id & 0xFF) / 255.0f;
+                cb.objectColorID.y = ((id >> 8) & 0xFF) / 255.0f;
+                cb.objectColorID.z = ((id >> 16) & 0xFF) / 255.0f;
+                cb.objectColorID.w = ((id >> 24) & 0xFF) / 255.0f;
+
+                memcpy(m_pCbvDataBegin + (objIndex * 256), &cb, sizeof(cb));
+
+                m_commandList->SetGraphicsRootConstantBufferView(0, m_constantBuffer->GetGPUVirtualAddress() + (objIndex * 256));
+
+                auto it = m_meshes.find(pFilter->m_meshName);
+                if (it != m_meshes.end())
+                {
+                    it->second->Render(m_commandList);
+                }
+
+                objIndex++;
+            }
+        }
+    }
+
+    for (auto& pChild : pObj->GetChildren())
+    {
+        RenderGameObjectForPicking(pChild, objIndex);
+    }
+}
+
+UINT CGraphicsEngine::Pick(int x, int y)
+{
+    if (!m_isInitialized || !m_pPicking) return 0;
+    
+    std::lock_guard<std::mutex> lock(m_mutex);
+    
+    WaitForPreviousFrame();
+
+    ThrowIfFailed(m_commandAllocator->Reset());
+    ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), m_pickingPipelineState.Get()));
+
+    RenderPickingPass(CSceneManager::GetInstance().GetActiveScene());
+    
+    m_pPicking->ReadPixelAsync(m_commandList.Get(), x, y);
+
+    ThrowIfFailed(m_commandList->Close());
+
+    ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
+    m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+    WaitForPreviousFrame();
+
+    return m_pPicking->GetPickedID();
 }
 
 void CGraphicsEngine::WaitForPreviousFrame()

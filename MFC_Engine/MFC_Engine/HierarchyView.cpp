@@ -48,7 +48,7 @@ int CHierarchyView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	CRect rectDummy;
 	rectDummy.SetRectEmpty();
 
-	const DWORD dwViewStyle = WS_CHILD | WS_VISIBLE | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+	const DWORD dwViewStyle = WS_CHILD | WS_VISIBLE | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS | TVS_SHOWSELALWAYS | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
 
 	if (!m_wndHierarchyView.Create(dwViewStyle, rectDummy, this, 2))
 	{
@@ -113,6 +113,24 @@ void CHierarchyView::InsertGameObject(HTREEITEM hParent, std::shared_ptr<CGameOb
 	}
 
 	m_wndHierarchyView.Expand(hItem, TVE_EXPAND);
+}
+
+void CHierarchyView::SelectGameObject(std::shared_ptr<CGameObject> pObj)
+{
+	if (!pObj)
+	{
+		m_wndHierarchyView.SelectItem(nullptr);
+		return;
+	}
+
+	for (const auto& pair : m_mapGameObjects)
+	{
+		if (pair.second == pObj)
+		{
+			m_wndHierarchyView.SelectItem(pair.first);
+			return;
+		}
+	}
 }
 
 void CHierarchyView::OnSelChanged(NMHDR* pNMHDR, LRESULT* pResult)

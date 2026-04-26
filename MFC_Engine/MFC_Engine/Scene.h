@@ -17,6 +17,8 @@ public:
     void RemoveGameObject(std::shared_ptr<CGameObject> obj);
     const std::vector<std::shared_ptr<CGameObject>>& GetGameObjects() const { return m_gameObjects; }
 
+    std::shared_ptr<CGameObject> FindGameObjectByID(UINT id);
+
 private:
     std::wstring m_strName;
     std::vector<std::shared_ptr<CGameObject>> m_gameObjects;
