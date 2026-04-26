@@ -5,6 +5,8 @@
 #include "Resource.h"
 #include "MFC_Engine.h"
 #include "SceneManager.h"
+#include "MeshFilter.h"
+#include "MeshRenderer.h"
 
 //////////////////////////////////////////////////////////////////////
 // 생성/소멸
@@ -27,6 +29,8 @@ BEGIN_MESSAGE_MAP(CHierarchyView, CDockablePane)
 	ON_WM_SETFOCUS()
 	ON_NOTIFY(TVN_SELCHANGED, 2, OnSelChanged)
 	ON_COMMAND(ID_HIERARCHY_CREATE_EMPTY, OnCreateEmpty)
+	ON_COMMAND(ID_HIERARCHY_CREATE_CUBE, OnCreateCube)
+	ON_COMMAND(ID_HIERARCHY_CREATE_PLANE, OnCreatePlane)
 	ON_COMMAND_RANGE(ID_SORTING_GROUPBYTYPE, ID_SORTING_SORTBYACCESS, OnSort)
 	ON_UPDATE_COMMAND_UI_RANGE(ID_SORTING_GROUPBYTYPE, ID_SORTING_SORTBYACCESS, OnUpdateSort)
 END_MESSAGE_MAP()
@@ -150,6 +154,14 @@ void CHierarchyView::OnContextMenu(CWnd* pWnd, CPoint point)
 	CMenu menu;
 	menu.CreatePopupMenu();
 	menu.AppendMenu(MF_STRING, ID_HIERARCHY_CREATE_EMPTY, _T("Create Empty GameObject"));
+	
+	CMenu subMenu;
+	subMenu.CreatePopupMenu();
+	subMenu.AppendMenu(MF_STRING, ID_HIERARCHY_CREATE_CUBE, _T("Cube"));
+	subMenu.AppendMenu(MF_STRING, ID_HIERARCHY_CREATE_PLANE, _T("Plane"));
+	
+	menu.AppendMenu(MF_POPUP, (UINT_PTR)subMenu.Detach(), _T("Create 3D Object"));
+
 	menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 }
 
@@ -170,6 +182,58 @@ void CHierarchyView::OnCreateEmpty()
 	else
 	{
 		// 씬 루트가 선택되었거나 아무것도 선택되지 않은 경우 씬의 최상위 오브젝트로 추가
+		pScene->AddGameObject(newObj);
+	}
+
+	FillHierarchyView();
+}
+
+void CHierarchyView::OnCreateCube()
+{
+	auto pScene = CSceneManager::GetInstance().GetActiveScene();
+	if (!pScene) return;
+
+	HTREEITEM hSelected = m_wndHierarchyView.GetSelectedItem();
+	auto newObj = CGameObject::Create(L"Cube");
+	
+	// Mesh 컴포넌트 추가
+	auto pFilter = newObj->AddComponent<CMeshFilter>();
+	pFilter->m_meshName = L"Cube";
+	newObj->AddComponent<CMeshRenderer>();
+
+	if (hSelected && m_mapGameObjects.count(hSelected))
+	{
+		auto pParent = m_mapGameObjects[hSelected];
+		pParent->AddChild(newObj);
+	}
+	else
+	{
+		pScene->AddGameObject(newObj);
+	}
+
+	FillHierarchyView();
+}
+
+void CHierarchyView::OnCreatePlane()
+{
+	auto pScene = CSceneManager::GetInstance().GetActiveScene();
+	if (!pScene) return;
+
+	HTREEITEM hSelected = m_wndHierarchyView.GetSelectedItem();
+	auto newObj = CGameObject::Create(L"Plane");
+	
+	// Mesh 컴포넌트 추가
+	auto pFilter = newObj->AddComponent<CMeshFilter>();
+	pFilter->m_meshName = L"Plane";
+	newObj->AddComponent<CMeshRenderer>();
+
+	if (hSelected && m_mapGameObjects.count(hSelected))
+	{
+		auto pParent = m_mapGameObjects[hSelected];
+		pParent->AddChild(newObj);
+	}
+	else
+	{
 		pScene->AddGameObject(newObj);
 	}
 

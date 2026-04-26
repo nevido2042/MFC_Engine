@@ -5,6 +5,8 @@
 #include "Resource.h"
 #include "MainFrm.h"
 #include "MFC_Engine.h"
+#include "MeshFilter.h"
+#include "MeshRenderer.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -38,6 +40,9 @@ BEGIN_MESSAGE_MAP(CInspectorView, CDockablePane)
 	ON_WM_PAINT()
 	ON_WM_SETFOCUS()
 	ON_REGISTERED_MESSAGE(AFX_WM_PROPERTY_CHANGED, OnPropertyChanged)
+	ON_WM_CONTEXTMENU()
+	ON_COMMAND(ID_INSPECTOR_ADD_MESH_FILTER, OnAddMeshFilter)
+	ON_COMMAND(ID_INSPECTOR_ADD_MESH_RENDERER, OnAddMeshRenderer)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -203,6 +208,34 @@ void CInspectorView::InitPropList()
 
 	m_wndPropList.AddProperty(pTransformGroup);
 	pTransformGroup->Expand(TRUE);
+
+	// --- Mesh Filter ---
+	auto meshFilter = m_pSelectedObj->GetComponent<CMeshFilter>();
+	if (meshFilter)
+	{
+		CMFCPropertyGridProperty* pGroup = new CMFCPropertyGridProperty(_T("Mesh Filter"));
+		
+		CMFCPropertyGridProperty* pMeshProp = new CMFCPropertyGridProperty(_T("Mesh"), (_variant_t)meshFilter->m_meshName.c_str(), _T("Select Mesh Type"));
+		pMeshProp->AddOption(_T("Cube"));
+		pMeshProp->AddOption(_T("Capsule"));
+		pMeshProp->AddOption(_T("Sphere"));
+		pMeshProp->AddOption(_T("Quad"));
+		pMeshProp->AllowEdit(FALSE); // 드롭다운 선택만 가능하도록 설정
+
+		pGroup->AddSubItem(pMeshProp);
+		m_wndPropList.AddProperty(pGroup);
+		pGroup->Expand(TRUE);
+	}
+
+	// --- Mesh Renderer ---
+	auto meshRenderer = m_pSelectedObj->GetComponent<CMeshRenderer>();
+	if (meshRenderer)
+	{
+		CMFCPropertyGridProperty* pGroup = new CMFCPropertyGridProperty(_T("Mesh Renderer"));
+		pGroup->AddSubItem(new CMFCPropertyGridProperty(_T("Enabled"), (_variant_t)meshRenderer->m_isEnabled, _T("Enable/Disable Rendering")));
+		m_wndPropList.AddProperty(pGroup);
+		pGroup->Expand(TRUE);
+	}
 }
 
 LRESULT CInspectorView::OnPropertyChanged(WPARAM, LPARAM lParam)
@@ -241,6 +274,20 @@ LRESULT CInspectorView::OnPropertyChanged(WPARAM, LPARAM lParam)
 		}
 	}
 
+	// Mesh Filter
+	auto meshFilter = m_pSelectedObj->GetComponent<CMeshFilter>();
+	if (meshFilter && name == _T("Mesh"))
+	{
+		meshFilter->m_meshName = (LPCTSTR)(_bstr_t)value;
+	}
+
+	// Mesh Renderer
+	auto meshRenderer = m_pSelectedObj->GetComponent<CMeshRenderer>();
+	if (meshRenderer && name == _T("Enabled"))
+	{
+		meshRenderer->m_isEnabled = (bool)value;
+	}
+
 	return 0;
 }
 
@@ -276,4 +323,34 @@ void CInspectorView::SetPropListFont()
 
 	m_wndPropList.SetFont(&m_fntPropList);
 	m_wndObjectCombo.SetFont(&m_fntPropList);
+}
+
+void CInspectorView::OnContextMenu(CWnd* pWnd, CPoint point)
+{
+	if (!m_pSelectedObj) return;
+
+	CMenu menu;
+	menu.CreatePopupMenu();
+	menu.AppendMenu(MF_STRING, ID_INSPECTOR_ADD_MESH_FILTER, _T("Add Mesh Filter"));
+	menu.AppendMenu(MF_STRING, ID_INSPECTOR_ADD_MESH_RENDERER, _T("Add Mesh Renderer"));
+
+	menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
+}
+
+void CInspectorView::OnAddMeshFilter()
+{
+	if (m_pSelectedObj && !m_pSelectedObj->GetComponent<CMeshFilter>())
+	{
+		m_pSelectedObj->AddComponent<CMeshFilter>();
+		InitPropList();
+	}
+}
+
+void CInspectorView::OnAddMeshRenderer()
+{
+	if (m_pSelectedObj && !m_pSelectedObj->GetComponent<CMeshRenderer>())
+	{
+		m_pSelectedObj->AddComponent<CMeshRenderer>();
+		InitPropList();
+	}
 }

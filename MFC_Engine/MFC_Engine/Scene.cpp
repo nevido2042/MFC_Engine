@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "Scene.h"
+#include "MeshFilter.h"
+#include "MeshRenderer.h"
 
 CScene::CScene()
 {
@@ -8,14 +10,9 @@ CScene::CScene()
     mainCamera->GetTransform()->m_position = { 0, 0, -10 };
     AddGameObject(mainCamera);
 
-    auto directionalLight = CGameObject::Create(L"Directional Light");
-    AddGameObject(directionalLight);
-
-    auto player = CGameObject::Create(L"Player");
-    
-    auto childObj = CGameObject::Create(L"Weapon");
-    player->AddChild(childObj);
-    
+    auto player = CGameObject::Create(L"Player Cube");
+    player->AddComponent<CMeshFilter>()->m_meshName = L"Cube";
+    player->AddComponent<CMeshRenderer>();
     AddGameObject(player);
 }
 

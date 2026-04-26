@@ -211,6 +211,11 @@
     <ClInclude Include="Transform.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="MeshFilter.h" />
+    <ClInclude Include="MeshRenderer.h" />
+    <ClInclude Include="EngineStructs.h" />
+    <ClInclude Include="PrimitiveGenerator.h" />
+    <ClInclude Include="Mesh.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HierarchyView.cpp" />
@@ -233,6 +238,8 @@
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="PrimitiveGenerator.cpp" />
+    <ClCompile Include="Mesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MFCEngine.rc" />

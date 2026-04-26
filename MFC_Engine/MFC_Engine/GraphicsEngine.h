@@ -2,28 +2,14 @@
 
 #include "TimeManager.h"
 #include "Camera.h"
+
+class CScene;
 #include <DirectXMath.h>
 #include <mutex>
+#include <map>
+#include <string>
 
-/**
- * @struct Vertex
- * @brief 삼각형의 정점 데이터를 정의하는 구조체입니다.
- */
-struct Vertex
-{
-    DirectX::XMFLOAT3 position;
-    DirectX::XMFLOAT4 color;
-};
-
-/**
- * @struct SceneConstantBuffer
- * @brief 쉐이더로 전달할 전역 데이터 구조체입니다 (256바이트 정렬 필요).
- */
-struct SceneConstantBuffer
-{
-    DirectX::XMFLOAT4X4 matWVP;
-    float padding[48]; // 256바이트 패딩
-};
+#include "PrimitiveGenerator.h"
 
 /**
  * @class CGraphicsEngine
@@ -38,12 +24,16 @@ public:
     // --- 핵심 인터페이스 ---
     bool Initialize(HWND hWnd, int width, int height);
     void Render();
+    void Render(std::shared_ptr<CScene> pScene);
     void Resize(int width, int height);
     float GetFPS() const { return m_timeManager.GetFPS(); }
 
     // --- 카메라 제어 ---
     void MoveCamera(float forward, float right, float up, float deltaTime);
     void RotateCamera(float pitch, float yaw);
+
+    // --- 메쉬 관리 ---
+    std::shared_ptr<class CMesh> GetPrimitiveMesh(const std::wstring& name);
 
 private:
     // --- 초기화 내부 함수 ---
@@ -57,7 +47,7 @@ private:
     // --- 삼각형 렌더링 관련 추가 함수 ---
     void CreateRootSignature();     // 쉐이더 자원 바인딩 레이아웃 생성
     void CreatePipelineState();     // 그래픽 파이프라인 상태(PSO) 생성
-    void CreateVertexBuffer();      // 정점 데이터 버퍼 생성
+    void CreatePrimitiveMeshes();   // 기본 도형 메쉬 생성
     void CreateConstantBuffer();    // 상수 버퍼 생성
     void CreateDepthStencilBuffer(); // 깊이 버퍼 생성
 
@@ -85,8 +75,9 @@ private:
     // --- 렌더링 파이프라인 객체 ---
     ComPtr<ID3D12RootSignature> m_rootSignature; // 루트 시그니처
     ComPtr<ID3D12PipelineState> m_pipelineState; // 파이프라인 상태 객체(PSO)
-    ComPtr<ID3D12Resource> m_vertexBuffer;      // 정점 버퍼 리소스
-    D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView; // 정점 버퍼 뷰
+    
+    // 메쉬 캐시
+    std::map<std::wstring, std::shared_ptr<class CMesh>> m_meshes;
     
     ComPtr<ID3D12Resource> m_constantBuffer;    // 상수 버퍼 리소스
     UINT8* m_pCbvDataBegin;                     // 상수 버퍼 매핑 포인터

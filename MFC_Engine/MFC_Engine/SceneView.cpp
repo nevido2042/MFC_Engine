@@ -3,6 +3,7 @@
 #include "SceneView.h"
 #include "Resource.h"
 #include "MainFrm.h"
+#include "SceneManager.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -148,7 +149,7 @@ void CSceneView::RenderLoop()
 		if (m_pEngine)
 		{
 			ProcessInput(deltaTime);
-			m_pEngine->Render();
+			m_pEngine->Render(CSceneManager::GetInstance().GetActiveScene());
 		}
 		
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));

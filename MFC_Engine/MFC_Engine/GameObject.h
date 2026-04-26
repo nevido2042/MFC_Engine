@@ -35,6 +35,14 @@ public:
         return nullptr;
     }
 
+    template<typename T, typename... Args>
+    std::shared_ptr<T> AddComponent(Args&&... args)
+    {
+        auto component = std::make_shared<T>(this, std::forward<Args>(args)...);
+        m_components.push_back(component);
+        return component;
+    }
+
 private:
     std::wstring m_name;
     CGameObject* m_pParent = nullptr;

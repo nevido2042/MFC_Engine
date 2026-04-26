@@ -36,6 +36,8 @@ protected:
 	
 	afx_msg void OnSelChanged(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnCreateEmpty();
+	afx_msg void OnCreateCube();
+	afx_msg void OnCreatePlane();
 
 	std::map<HTREEITEM, std::shared_ptr<CGameObject>> m_mapGameObjects;
 
