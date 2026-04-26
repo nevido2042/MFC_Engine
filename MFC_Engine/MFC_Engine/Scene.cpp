@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Scene.h"
+#include <algorithm>
 #include "MeshFilter.h"
 #include "MeshRenderer.h"
 
@@ -9,13 +10,28 @@ CScene::CScene()
     auto mainCamera = CGameObject::Create(L"Main Camera");
     mainCamera->GetTransform()->m_position = { 0, 0, -10 };
     AddGameObject(mainCamera);
-
-    auto player = CGameObject::Create(L"Player Cube");
-    player->AddComponent<CMeshFilter>()->m_meshName = L"Cube";
-    player->AddComponent<CMeshRenderer>();
-    AddGameObject(player);
 }
 
 CScene::~CScene()
 {
+}
+
+void CScene::RemoveGameObject(std::shared_ptr<CGameObject> obj)
+{
+    if (!obj) return;
+
+    // 최상위 목록에서 제거 시도
+    auto it = std::find(m_gameObjects.begin(), m_gameObjects.end(), obj);
+    if (it != m_gameObjects.end())
+    {
+        m_gameObjects.erase(it);
+        return;
+    }
+
+    // 부모가 있는 경우 부모로부터 제거
+    auto pParent = obj->GetParent();
+    if (pParent)
+    {
+        pParent->RemoveChild(obj);
+    }
 }

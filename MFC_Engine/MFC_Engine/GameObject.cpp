@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "GameObject.h"
+#include <algorithm>
 
 CGameObject::CGameObject(const std::wstring& name)
     : m_name(name)
@@ -23,5 +24,15 @@ void CGameObject::AddChild(std::shared_ptr<CGameObject> child)
     {
         child->m_pParent = this;
         m_children.push_back(child);
+    }
+}
+
+void CGameObject::RemoveChild(std::shared_ptr<CGameObject> child)
+{
+    auto it = std::find(m_children.begin(), m_children.end(), child);
+    if (it != m_children.end())
+    {
+        child->m_pParent = nullptr;
+        m_children.erase(it);
     }
 }

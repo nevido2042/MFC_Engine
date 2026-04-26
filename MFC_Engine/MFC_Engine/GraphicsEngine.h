@@ -44,7 +44,7 @@ private:
     void CreateRenderTargets();
     void CreateCommandAllocator();
     
-    // --- 삼각형 렌더링 관련 추가 함수 ---
+    // --- 렌더링 파이프라인 구축 관련 함수 ---
     void CreateRootSignature();     // 쉐이더 자원 바인딩 레이아웃 생성
     void CreatePipelineState();     // 그래픽 파이프라인 상태(PSO) 생성
     void CreatePrimitiveMeshes();   // 기본 도형 메쉬 생성
@@ -72,7 +72,7 @@ private:
     ComPtr<ID3D12CommandAllocator> m_commandAllocator;
     ComPtr<ID3D12GraphicsCommandList> m_commandList;
 
-    // --- 렌더링 파이프라인 객체 ---
+    // --- 렌더링 파이프라인 구축 ---
     ComPtr<ID3D12RootSignature> m_rootSignature; // 루트 시그니처
     ComPtr<ID3D12PipelineState> m_pipelineState; // 파이프라인 상태 객체(PSO)
     

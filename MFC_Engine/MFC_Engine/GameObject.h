@@ -19,6 +19,7 @@ public:
 
     // Hierarchy management
     void AddChild(std::shared_ptr<CGameObject> child);
+    void RemoveChild(std::shared_ptr<CGameObject> child);
     const std::vector<std::shared_ptr<CGameObject>>& GetChildren() const { return m_children; }
     
     CGameObject* GetParent() { return m_pParent; }

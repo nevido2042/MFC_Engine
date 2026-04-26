@@ -31,6 +31,11 @@ BEGIN_MESSAGE_MAP(CHierarchyView, CDockablePane)
 	ON_COMMAND(ID_HIERARCHY_CREATE_EMPTY, OnCreateEmpty)
 	ON_COMMAND(ID_HIERARCHY_CREATE_CUBE, OnCreateCube)
 	ON_COMMAND(ID_HIERARCHY_CREATE_PLANE, OnCreatePlane)
+	ON_COMMAND(ID_HIERARCHY_CREATE_QUAD, OnCreateQuad)
+	ON_COMMAND(ID_HIERARCHY_CREATE_SPHERE, OnCreateSphere)
+	ON_COMMAND(ID_HIERARCHY_CREATE_CAPSULE, OnCreateCapsule)
+	ON_COMMAND(ID_HIERARCHY_DELETE, OnDelete)
+	ON_NOTIFY(TVN_KEYDOWN, 2, OnKeyDown)
 	ON_COMMAND_RANGE(ID_SORTING_GROUPBYTYPE, ID_SORTING_SORTBYACCESS, OnSort)
 	ON_UPDATE_COMMAND_UI_RANGE(ID_SORTING_GROUPBYTYPE, ID_SORTING_SORTBYACCESS, OnUpdateSort)
 END_MESSAGE_MAP()
@@ -159,8 +164,18 @@ void CHierarchyView::OnContextMenu(CWnd* pWnd, CPoint point)
 	subMenu.CreatePopupMenu();
 	subMenu.AppendMenu(MF_STRING, ID_HIERARCHY_CREATE_CUBE, _T("Cube"));
 	subMenu.AppendMenu(MF_STRING, ID_HIERARCHY_CREATE_PLANE, _T("Plane"));
+	subMenu.AppendMenu(MF_STRING, ID_HIERARCHY_CREATE_QUAD, _T("Quad"));
+	subMenu.AppendMenu(MF_STRING, ID_HIERARCHY_CREATE_SPHERE, _T("Sphere"));
+	subMenu.AppendMenu(MF_STRING, ID_HIERARCHY_CREATE_CAPSULE, _T("Capsule"));
 	
 	menu.AppendMenu(MF_POPUP, (UINT_PTR)subMenu.Detach(), _T("Create 3D Object"));
+	
+	HTREEITEM hSelected = pWndTree->GetSelectedItem();
+	if (hSelected != nullptr && m_mapGameObjects.count(hSelected))
+	{
+		menu.AppendMenu(MF_SEPARATOR);
+		menu.AppendMenu(MF_STRING, ID_HIERARCHY_DELETE, _T("Delete"));
+	}
 
 	menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 }
@@ -190,41 +205,75 @@ void CHierarchyView::OnCreateEmpty()
 
 void CHierarchyView::OnCreateCube()
 {
-	auto pScene = CSceneManager::GetInstance().GetActiveScene();
-	if (!pScene) return;
-
-	HTREEITEM hSelected = m_wndHierarchyView.GetSelectedItem();
-	auto newObj = CGameObject::Create(L"Cube");
-	
-	// Mesh 컴포넌트 추가
-	auto pFilter = newObj->AddComponent<CMeshFilter>();
-	pFilter->m_meshName = L"Cube";
-	newObj->AddComponent<CMeshRenderer>();
-
-	if (hSelected && m_mapGameObjects.count(hSelected))
-	{
-		auto pParent = m_mapGameObjects[hSelected];
-		pParent->AddChild(newObj);
-	}
-	else
-	{
-		pScene->AddGameObject(newObj);
-	}
-
-	FillHierarchyView();
+	CreatePrimitive(L"Cube", L"Cube");
 }
 
 void CHierarchyView::OnCreatePlane()
+{
+	CreatePrimitive(L"Plane", L"Plane");
+}
+
+void CHierarchyView::OnCreateQuad()
+{
+	CreatePrimitive(L"Quad", L"Quad");
+}
+
+void CHierarchyView::OnCreateSphere()
+{
+	CreatePrimitive(L"Sphere", L"Sphere");
+}
+
+void CHierarchyView::OnCreateCapsule()
+{
+	CreatePrimitive(L"Capsule", L"Capsule");
+}
+
+void CHierarchyView::OnDelete()
+{
+	HTREEITEM hSelected = m_wndHierarchyView.GetSelectedItem();
+	if (hSelected == nullptr || m_mapGameObjects.count(hSelected) == 0)
+		return;
+
+	auto pObj = m_mapGameObjects[hSelected];
+	auto pScene = CSceneManager::GetInstance().GetActiveScene();
+	
+	if (pScene && pObj)
+	{
+		pScene->RemoveGameObject(pObj);
+		
+		// 인스펙터 선택 해제
+		CMainFrame* pMainFrame = (CMainFrame*)AfxGetMainWnd();
+		if (pMainFrame)
+		{
+			pMainFrame->GetInspectorView()->SetSelectedGameObject(nullptr);
+		}
+
+		FillHierarchyView();
+	}
+}
+
+void CHierarchyView::OnKeyDown(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	TV_KEYDOWN* pTVKeyDown = (TV_KEYDOWN*)pNMHDR;
+	*pResult = 0;
+
+	if (pTVKeyDown->wVKey == VK_DELETE)
+	{
+		OnDelete();
+	}
+}
+
+void CHierarchyView::CreatePrimitive(const std::wstring& name, const std::wstring& meshName)
 {
 	auto pScene = CSceneManager::GetInstance().GetActiveScene();
 	if (!pScene) return;
 
 	HTREEITEM hSelected = m_wndHierarchyView.GetSelectedItem();
-	auto newObj = CGameObject::Create(L"Plane");
-	
+	auto newObj = CGameObject::Create(name);
+
 	// Mesh 컴포넌트 추가
 	auto pFilter = newObj->AddComponent<CMeshFilter>();
-	pFilter->m_meshName = L"Plane";
+	pFilter->m_meshName = meshName;
 	newObj->AddComponent<CMeshRenderer>();
 
 	if (hSelected && m_mapGameObjects.count(hSelected))

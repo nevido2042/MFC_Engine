@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <algorithm>
 #include "GameObject.h"
 
 class CScene
@@ -13,6 +14,7 @@ public:
     const std::wstring& GetName() const { return m_strName; }
 
     void AddGameObject(std::shared_ptr<CGameObject> obj) { m_gameObjects.push_back(obj); }
+    void RemoveGameObject(std::shared_ptr<CGameObject> obj);
     const std::vector<std::shared_ptr<CGameObject>>& GetGameObjects() const { return m_gameObjects; }
 
 private:

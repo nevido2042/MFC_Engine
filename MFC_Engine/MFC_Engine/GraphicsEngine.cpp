@@ -57,7 +57,7 @@ bool CGraphicsEngine::Initialize(HWND hWnd, int width, int height)
     CreateRenderTargets();
     CreateCommandAllocator();
 
-    // --- 삼각형 렌더링을 위한 파이프라인 구축 ---
+    // --- 렌더링 파이프라인 구축 ---
     CreateRootSignature();
     CreatePipelineState();
     CreatePrimitiveMeshes();
@@ -286,6 +286,9 @@ void CGraphicsEngine::CreatePrimitiveMeshes()
 {
     m_meshes[L"Cube"] = CPrimitiveGenerator::CreateCubeMesh(m_device);
     m_meshes[L"Plane"] = CPrimitiveGenerator::CreatePlaneMesh(m_device);
+    m_meshes[L"Quad"] = CPrimitiveGenerator::CreateQuadMesh(m_device);
+    m_meshes[L"Sphere"] = CPrimitiveGenerator::CreateSphereMesh(m_device);
+    m_meshes[L"Capsule"] = CPrimitiveGenerator::CreateCapsuleMesh(m_device);
 }
 
 std::shared_ptr<CMesh> CGraphicsEngine::GetPrimitiveMesh(const std::wstring& name)

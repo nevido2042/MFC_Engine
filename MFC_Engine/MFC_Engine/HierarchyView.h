@@ -38,6 +38,13 @@ protected:
 	afx_msg void OnCreateEmpty();
 	afx_msg void OnCreateCube();
 	afx_msg void OnCreatePlane();
+	afx_msg void OnCreateQuad();
+	afx_msg void OnCreateSphere();
+	afx_msg void OnCreateCapsule();
+	afx_msg void OnDelete();
+	afx_msg void OnKeyDown(NMHDR* pNMHDR, LRESULT* pResult);
+
+	void CreatePrimitive(const std::wstring& name, const std::wstring& meshName);
 
 	std::map<HTREEITEM, std::shared_ptr<CGameObject>> m_mapGameObjects;
 
