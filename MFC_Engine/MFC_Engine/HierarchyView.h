@@ -12,7 +12,6 @@ class CHierarchyToolBar : public CMFCToolBar
 	virtual BOOL AllowShowOnList() const { return FALSE; }
 };
 
-#include <memory>
 #include <map>
 #include "GameObject.h"
 

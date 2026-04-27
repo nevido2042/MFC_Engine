@@ -1,7 +1,5 @@
 #include "pch.h"
-#include "d3dx12.h"
 #include "GraphicsEngine.h"
-#include <d3dcompiler.h>
 #include "Scene.h"
 #include "Transform.h"
 #include "MeshFilter.h"
@@ -11,7 +9,6 @@
 #include "SceneManager.h"
 
 // 쉐이더 컴파일 라이브러리 링크
-#pragma comment(lib, "d3dcompiler.lib")
 
 CGraphicsEngine::CGraphicsEngine()
     : m_isInitialized(false)
@@ -270,8 +267,9 @@ void CGraphicsEngine::RenderGameObject(std::shared_ptr<CGameObject> pObj, int& o
                 DirectX::XMMATRIX matWVP = matWorld * matView * matProj;
 
                 // 상수 버퍼 업데이트
-                SceneConstantBuffer cb;
+                SceneConstantBuffer cb = {};
                 DirectX::XMStoreFloat4x4(&cb.matWVP, DirectX::XMMatrixTranspose(matWVP));
+                cb.objectColorID = { 0.0f, 0.0f, 0.0f, 0.0f };
                 m_pConstantBuffer->Update(objIndex, &cb, sizeof(cb));
 
                 // 해당 오브젝트의 CBV 연결 및 그리기
@@ -302,9 +300,8 @@ UINT CGraphicsEngine::Pick(int x, int y)
     
     std::lock_guard<std::mutex> lock(m_mutex);
     
-    m_pDevice->WaitForPreviousFrame();
-
-    UINT id = CPickingSystem::GetInstance().Pick(x, y, 
+    // 피킹 렌더링 수행
+    CPickingSystem::GetInstance().Pick(x, y, 
         m_pDevice->GetDevice(), 
         m_pDevice->GetCommandQueue(), 
         m_pDevice->GetCommandAllocator(), 
@@ -314,9 +311,11 @@ UINT CGraphicsEngine::Pick(int x, int y)
         m_pConstantBuffer->GetMappedData(), 
         m_width, m_height);
     
-    m_pDevice->WaitForPreviousFrame();
+    // GPU가 피킹 및 픽셀 복사를 완료할 때까지 명시적으로 대기
+    m_pDevice->WaitGPU();
 
-    return id;
+    // 결과 읽기
+    return CPickingSystem::GetInstance().GetPickedID();
 }
 
 void CGraphicsEngine::WaitForPreviousFrame()

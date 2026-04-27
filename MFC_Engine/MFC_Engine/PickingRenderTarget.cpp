@@ -2,13 +2,7 @@
 #include "PickingRenderTarget.h"
 #include "d3dx12.h"
 
-#ifndef ThrowIfFailed
-#define ThrowIfFailed(x) \
-{ \
-    HRESULT hr__ = (x); \
-    if(FAILED(hr__)) { throw std::exception(); } \
-}
-#endif
+// pch.h에 정의된 ThrowIfFailed를 사용합니다.
 
 CPickingRenderTarget::CPickingRenderTarget() : m_width(0), m_height(0) {}
 CPickingRenderTarget::~CPickingRenderTarget() {}

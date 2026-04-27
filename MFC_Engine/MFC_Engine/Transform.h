@@ -1,6 +1,6 @@
 #pragma once
 #include "Component.h"
-#include <directxmath.h>
+
 
 class CTransform : public CComponent
 {

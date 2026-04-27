@@ -1,7 +1,5 @@
 #pragma once
-#include <string>
-#include <vector>
-#include <memory>
+
 #include "Transform.h"
 
 class CGameObject : public std::enable_shared_from_this<CGameObject>

@@ -7,7 +7,7 @@
 #include "MeshFilter.h"
 #include "Transform.h"
 #include "PrimitiveGenerator.h"
-#include <d3dcompiler.h>
+
 
 void CPickingSystem::Initialize(ComPtr<ID3D12Device> device, ComPtr<ID3D12RootSignature> rootSignature, int width, int height)
 {
@@ -106,11 +106,14 @@ UINT CPickingSystem::Pick(int x, int y, ID3D12Device* device, ID3D12CommandQueue
     ID3D12CommandList* ppCommandLists[] = { commandList };
     queue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
-    // 동기화는 호출부(GraphicsEngine)에서 관리하거나 여기서 수행
-    // 여기서는 일단 직접 대기하도록 설계 (Pick은 대개 동기적으로 결과를 원함)
-    // (원래 CGraphicsEngine::Pick에서도 WaitForPreviousFrame을 호출했음)
-    
-    return m_pPickingRenderTarget->GetPickedID();
+    return 0; // 이제 결과는 GetPickedID()로 별도 호출
+}
+
+UINT CPickingSystem::GetPickedID()
+{
+    if (m_pPickingRenderTarget)
+        return m_pPickingRenderTarget->GetPickedID();
+    return 0;
 }
 
 void CPickingSystem::RenderPickingPass(std::shared_ptr<CScene> pScene, ID3D12GraphicsCommandList* commandList, int width, int height, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin)

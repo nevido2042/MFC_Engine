@@ -3,8 +3,7 @@
 #include "TimeManager.h"
 
 class CScene;
-class CPicking;
-#include <DirectXMath.h>
+class CPickingRenderTarget;
 #include <mutex>
 #include <map>
 #include <string>

@@ -26,6 +26,8 @@ using namespace DirectX;
 
 #include <exception>
 #include <memory>
+#include <vector>
+#include <string>
 #include "d3dx12.h"
 
 inline void ThrowIfFailed(HRESULT hr)

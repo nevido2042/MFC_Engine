@@ -1,10 +1,5 @@
 #pragma once
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include <wrl/client.h>
-#include <vector>
 
-using Microsoft::WRL::ComPtr;
 
 class CDevice
 {
@@ -18,6 +13,7 @@ public:
     void PrepareRender();
     void SubmitRender();
     void WaitForPreviousFrame();
+    void WaitGPU();
 
     ID3D12Device* GetDevice() const { return m_device.Get(); }
     ID3D12GraphicsCommandList* GetCommandList() const { return m_commandList.Get(); }

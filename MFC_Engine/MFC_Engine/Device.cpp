@@ -1,9 +1,5 @@
 #include "pch.h"
 #include "Device.h"
-#include "d3dx12.h"
-
-#pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "d3d12.lib")
 
 CDevice::CDevice()
     : m_rtvDescriptorSize(0)
@@ -125,6 +121,21 @@ void CDevice::WaitForPreviousFrame()
     }
     
     m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+}
+
+void CDevice::WaitGPU()
+{
+    // 현재 프레임 인덱스와 무관하게 새로운 펜스 값을 발행하여 대기
+    static UINT64 waitValue = 100000; // 충분히 큰 값부터 시작하거나 별도 관리
+    waitValue++;
+    
+    ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), waitValue));
+    
+    if (m_fence->GetCompletedValue() < waitValue)
+    {
+        ThrowIfFailed(m_fence->SetEventOnCompletion(waitValue, m_fenceEvent));
+        WaitForSingleObject(m_fenceEvent, INFINITE);
+    }
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE CDevice::GetRtvHandle() const

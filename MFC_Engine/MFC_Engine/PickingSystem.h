@@ -1,8 +1,4 @@
 #pragma once
-#include <d3d12.h>
-#include <wrl/client.h>
-#include <memory>
-#include <vector>
 #include "PickingRenderTarget.h"
 
 using Microsoft::WRL::ComPtr;
@@ -20,6 +16,7 @@ public:
     void Resize(ComPtr<ID3D12Device> device, int width, int height);
     
     UINT Pick(int x, int y, ID3D12Device* device, ID3D12CommandQueue* queue, ID3D12CommandAllocator* allocator, ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* rootSignature, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin, int width, int height);
+    UINT GetPickedID();
 
 private:
     void RenderPickingPass(std::shared_ptr<class CScene> pScene, ID3D12GraphicsCommandList* commandList, int width, int height, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin);
