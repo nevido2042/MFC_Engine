@@ -28,6 +28,8 @@ using namespace DirectX;
 #include <memory>
 #include <vector>
 #include <string>
+#include <mutex>
+#include <map>
 #include "d3dx12.h"
 
 inline void ThrowIfFailed(HRESULT hr)

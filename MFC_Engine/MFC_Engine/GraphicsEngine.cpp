@@ -296,46 +296,6 @@ void CGraphicsEngine::RenderGameObject(std::shared_ptr<CGameObject> pObj, int& o
 }
 
 
-UINT CGraphicsEngine::Pick(int x, int y, std::shared_ptr<CGameObject> pSelectedObj, CGizmo* pGizmo)
-{
-    if (!m_bIsInitialized) return 0;
-    
-    std::lock_guard<std::mutex> lock(m_mutex);
-    
-    // 할당자를 Reset하기 전에 GPU가 현재 사용 중인 명령들을 모두 완료할 때까지 대기
-    m_pDevice->WaitGPU();
-    
-    auto commandAllocator = m_pDevice->GetCommandAllocator();
-    auto commandList = m_pDevice->GetCommandList();
-    auto commandQueue = m_pDevice->GetCommandQueue();
-
-    // 커맨드 리스트 초기화
-    commandAllocator->Reset();
-    commandList->Reset(commandAllocator, nullptr);
-
-    // 피킹 렌더링 수행 (명령 기록)
-    CPickingSystem::GetInstance().Pick(x, y, 
-        m_pDevice->GetDevice(), 
-        commandQueue, 
-        commandAllocator, 
-        commandList, 
-        m_rootSignature.Get(), 
-        m_pConstantBuffer->GetResource(), 
-        m_pConstantBuffer->GetMappedData(), 
-        m_nWidth, m_nHeight,
-        pSelectedObj, pGizmo);
-    
-    // 커맨드 리스트 닫기 및 실행
-    ThrowIfFailed(commandList->Close());
-    ID3D12CommandList* ppCommandLists[] = { commandList };
-    commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-    // GPU가 피킹 및 픽셀 복사를 완료할 때까지 명시적으로 대기
-    m_pDevice->WaitGPU();
-
-    // 결과 읽기
-    return CPickingSystem::GetInstance().GetPickedID();
-}
 
 void CGraphicsEngine::RenderGizmo(CGizmo* pGizmo, std::shared_ptr<CGameObject> pSelectedObj)
 {

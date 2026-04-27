@@ -1,14 +1,7 @@
 #pragma once
 
+// 인라인 전방 선언 사용으로 외부 클래스 의존성 제거
 #include "TimeManager.h"
-
-class CScene;
-class CPickingRenderTarget;
-class CGizmo;
-#include <mutex>
-#include <map>
-#include <string>
-
 #include "PrimitiveGenerator.h"
 #include "ConstantBuffer.h"
 #include "Device.h"
@@ -30,8 +23,17 @@ public:
     float GetFPS() const { return m_timeManager.GetFPS(); }
     ID3D12Device* GetDevice() { return m_pDevice ? m_pDevice->GetDevice() : nullptr; }
     
-    UINT Pick(int x, int y, std::shared_ptr<class CGameObject> pSelectedObj, class CGizmo* pGizmo);
+    // --- 리소스 접근자 (CPickingSystem 등에서 사용) ---
+    ID3D12CommandQueue* GetCommandQueue() { return m_pDevice->GetCommandQueue(); }
+    ID3D12CommandAllocator* GetCommandAllocator() { return m_pDevice->GetCommandAllocator(); }
+    ID3D12GraphicsCommandList* GetCommandList() { return m_pDevice->GetCommandList(); }
+    ID3D12RootSignature* GetRootSignature() { return m_rootSignature.Get(); }
+    ID3D12Resource* GetConstantBufferResource() { return m_pConstantBuffer->GetResource(); }
+    UINT8* GetConstantBufferPtr() { return m_pConstantBuffer->GetMappedData(); }
+    int GetWidth() const { return m_nWidth; }
+    int GetHeight() const { return m_nHeight; }
 
+    void WaitGPU() { if (m_pDevice) m_pDevice->WaitGPU(); }
 
 private:
     // --- 초기화 내부 함수 ---

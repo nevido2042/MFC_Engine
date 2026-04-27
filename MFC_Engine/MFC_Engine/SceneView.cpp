@@ -9,6 +9,7 @@
 #include "GameObject.h"
 #include "Transform.h"
 #include "Gizmo.h"
+#include "PickingSystem.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -126,7 +127,16 @@ void CSceneView::OnLButtonDown(UINT nFlags, CPoint point)
     bool bIsPicked = false;
     if (m_pEngine)
     {
-        UINT pickedID = m_pEngine->Pick(point.x, point.y, m_pSelectedObj, m_pGizmo.get());
+        // 엔진 대신 피킹 시스템을 통해 직접 피킹 수행
+        // 기즈모 렌더링 로직을 람다로 전달하여 결합도 해제
+        UINT pickedID = CPickingSystem::GetInstance().Pick(point.x, point.y, m_pEngine.get(), 
+            [&](ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* pCB, UINT8* pData) {
+                if (m_pGizmo && m_pSelectedObj)
+                {
+                    m_pGizmo->RenderForPicking(pCmdList, m_pSelectedObj.get(), 
+                        m_pEngine->GetWidth(), m_pEngine->GetHeight(), pCB, pData);
+                }
+            });
 
         if (pickedID > 0)
         {

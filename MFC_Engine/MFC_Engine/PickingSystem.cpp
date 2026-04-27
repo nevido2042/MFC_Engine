@@ -10,8 +10,8 @@
 #include "Camera.h"
 #include "PrimitiveGenerator.h"
 #include "Mesh.h"
-#include "Gizmo.h"
 #include "EngineStructs.h"
+#include "GraphicsEngine.h"
 
 void CPickingSystem::Initialize(ComPtr<ID3D12Device> device, ComPtr<ID3D12RootSignature> rootSignature, int width, int height)
 {
@@ -95,29 +95,42 @@ void CPickingSystem::Resize(ComPtr<ID3D12Device> device, int width, int height)
     }
 }
 
-UINT CPickingSystem::Pick(int x, int y, ID3D12Device* device, ID3D12CommandQueue* queue, ID3D12CommandAllocator* allocator, ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* rootSignature, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin, int width, int height, std::shared_ptr<CGameObject> pSelectedObj, CGizmo* pGizmo)
+UINT CPickingSystem::Pick(int x, int y, CGraphicsEngine* pEngine, PickingOverlayFunc overlayFunc)
 {
-    if (!m_pPickingRenderTarget) return 0;
+    if (!pEngine || !m_pPickingRenderTarget) return 0;
+
+    auto commandQueue = pEngine->GetCommandQueue();
+    auto commandAllocator = pEngine->GetCommandAllocator();
+    auto commandList = pEngine->GetCommandList();
+    auto rootSignature = pEngine->GetRootSignature();
+    auto constantBuffer = pEngine->GetConstantBufferResource();
+    auto cbvDataBegin = pEngine->GetConstantBufferPtr();
+    int width = pEngine->GetWidth();
+    int height = pEngine->GetHeight();
+
+    // 커맨드 리스트 초기화
+    commandAllocator->Reset();
+    commandList->Reset(commandAllocator, nullptr);
 
     // 1. 렌더링 패스 수행
-    RenderPickingPass(CSceneManager::GetInstance().GetActiveScene(), commandList, rootSignature, width, height, constantBuffer, cbvDataBegin, pSelectedObj, pGizmo);
+    RenderPickingPass(CSceneManager::GetInstance().GetActiveScene(), commandList, rootSignature, width, height, constantBuffer, cbvDataBegin, overlayFunc);
 
     // 2. 결과 읽기 예약
     m_pPickingRenderTarget->ReadPixelAsync(commandList, x, y);
 
-    return 0;
+    // 3. 커맨드 리스트 닫기 및 실행
+    ThrowIfFailed(commandList->Close());
+    ID3D12CommandList* ppCommandLists[] = { commandList };
+    commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+    // 4. GPU 대기 (피킹 데이터 동기화)
+    pEngine->WaitGPU();
+
+    // 5. 결과 반환
+    return m_pPickingRenderTarget->GetPickedID();
 }
 
-UINT CPickingSystem::GetPickedID()
-{
-    if (m_pPickingRenderTarget)
-    {
-        return m_pPickingRenderTarget->GetPickedID();
-    }
-    return 0;
-}
-
-void CPickingSystem::RenderPickingPass(std::shared_ptr<CScene> pScene, ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* rootSignature, int width, int height, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin, std::shared_ptr<CGameObject> pSelectedObj, CGizmo* pGizmo)
+void CPickingSystem::RenderPickingPass(std::shared_ptr<CScene> pScene, ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* rootSignature, int width, int height, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin, PickingOverlayFunc overlayFunc)
 {
     if (!pScene || !m_pPickingRenderTarget || !m_pickingPSO) return;
 
@@ -149,12 +162,12 @@ void CPickingSystem::RenderPickingPass(std::shared_ptr<CScene> pScene, ID3D12Gra
         RenderGameObjectForPicking(pObj, objIndex, commandList, width, height, constantBuffer, cbvDataBegin);
     }
 
-    // 기즈모 렌더링 (선택된 오브젝트가 있을 경우)
-    if (pSelectedObj && pGizmo)
+    // 추가 오버레이(기즈모 등) 렌더링 콜백 실행
+    if (overlayFunc)
     {
-        // 기즈모가 도형보다 우선적으로 선택되도록 깊이 버퍼를 클리어하여 덧그림
+        // 오버레이가 도형보다 우선적으로 선택되도록 깊이 버퍼를 클리어하여 덧그림
         commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-        RenderGizmoForPicking(pSelectedObj, pGizmo, commandList, width, height, constantBuffer, cbvDataBegin);
+        overlayFunc(commandList, constantBuffer, cbvDataBegin);
     }
 }
 
@@ -206,10 +219,3 @@ void CPickingSystem::RenderGameObjectForPicking(std::shared_ptr<CGameObject> pOb
     }
 }
 
-void CPickingSystem::RenderGizmoForPicking(std::shared_ptr<CGameObject> pSelectedObj, CGizmo* pGizmo, ID3D12GraphicsCommandList* commandList, int width, int height, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin)
-{
-    if (pGizmo)
-    {
-        pGizmo->RenderForPicking(commandList, pSelectedObj.get(), width, height, constantBuffer, cbvDataBegin);
-    }
-}
