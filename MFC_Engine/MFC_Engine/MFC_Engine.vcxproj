@@ -218,6 +218,9 @@
     <ClInclude Include="PrimitiveGenerator.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Picking.h" />
+    <ClInclude Include="PickingSystem.h" />
+    <ClInclude Include="ConstantBuffer.h" />
+    <ClInclude Include="Device.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HierarchyView.cpp" />
@@ -244,6 +247,9 @@
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Transform.cpp" />
     <ClCompile Include="Picking.cpp" />
+    <ClCompile Include="PickingSystem.cpp" />
+    <ClCompile Include="ConstantBuffer.cpp" />
+    <ClCompile Include="Device.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MFCEngine.rc" />

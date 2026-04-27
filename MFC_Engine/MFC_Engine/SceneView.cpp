@@ -131,7 +131,10 @@ void CSceneView::OnMouseMove(UINT nFlags, CPoint point)
 		float dx = static_cast<float>(point.x - m_lastMousePos.x);
 		float dy = static_cast<float>(point.y - m_lastMousePos.y);
 
-		m_pEngine->RotateCamera(dy, dx);
+		{
+			std::lock_guard<std::mutex> lock(CSceneManager::GetInstance().GetCameraMutex());
+			CSceneManager::GetInstance().GetEditorCamera().Rotate(dy, dx);
+		}
 		m_lastMousePos = point;
 	}
 
@@ -194,6 +197,7 @@ void CSceneView::ProcessInput(float deltaTime)
 
 	if (forward != 0.0f || right != 0.0f || up != 0.0f)
 	{
-		m_pEngine->MoveCamera(forward, right, up, deltaTime);
+		std::lock_guard<std::mutex> lock(CSceneManager::GetInstance().GetCameraMutex());
+		CSceneManager::GetInstance().GetEditorCamera().Move(forward, right, up, deltaTime);
 	}
 }

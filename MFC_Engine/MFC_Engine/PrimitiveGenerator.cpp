@@ -225,3 +225,24 @@ std::shared_ptr<CMesh> CPrimitiveGenerator::CreateCapsuleMesh(ComPtr<ID3D12Devic
     mesh->Initialize(device, CreateCapsuleData());
     return mesh;
 }
+
+void CPrimitiveGenerator::Initialize(ComPtr<ID3D12Device> device)
+{
+    if (!m_meshes.empty()) return;
+
+    m_meshes[L"Cube"]    = CreateCubeMesh(device);
+    m_meshes[L"Plane"]   = CreatePlaneMesh(device);
+    m_meshes[L"Quad"]    = CreateQuadMesh(device);
+    m_meshes[L"Sphere"]  = CreateSphereMesh(device);
+    m_meshes[L"Capsule"] = CreateCapsuleMesh(device);
+}
+
+std::shared_ptr<CMesh> CPrimitiveGenerator::GetPrimitiveMesh(const std::wstring& name)
+{
+    auto it = m_meshes.find(name);
+    if (it != m_meshes.end())
+    {
+        return it->second;
+    }
+    return nullptr;
+}
