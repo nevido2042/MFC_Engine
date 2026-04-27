@@ -17,22 +17,22 @@ public:
     void Update();
 
     /** @brief 현재 FPS 반환 */
-    float GetFPS() const { return m_fps; }
+    float GetFPS() const { return m_fFPS; }
     
     /** @brief 프레임 사이의 경과 시간(DeltaTime) 반환 */
-    float GetDeltaTime() const { return (float)m_deltaTime; }
+    float GetDeltaTime() const { return (float)m_fDeltaTime; }
     
     /** @brief 엔진 시작 후 총 누적 시간 반환 */
-    float GetTotalTime() const { return (float)m_totalTime; }
+    float GetTotalTime() const { return (float)m_fTotalTime; }
 
 private:
-    LARGE_INTEGER m_timerFrequency;     // 타이머 주파수
-    LARGE_INTEGER m_lastTimestamp;      // 이전 프레임 타임스탬프
+    LARGE_INTEGER m_nTimerFrequency;     // 타이머 주파수
+    LARGE_INTEGER m_nLastTimestamp;      // 이전 프레임 타임스탬프
     
-    double m_deltaTime;                 // 프레임 간 경과 시간
-    double m_totalTime;                 // 누적 시간
+    double m_fDeltaTime;                 // 프레임 간 경과 시간
+    double m_fTotalTime;                 // 누적 시간
     
-    float m_fps;                        // 계산된 FPS
-    int m_frameCount;                   // 프레임 카운트
-    double m_fpsTimer;                  // FPS 갱신용 타이머
+    float m_fFPS;                        // 계산된 FPS
+    int m_nFrameCount;                   // 프레임 카운트
+    double m_fFPSTimer;                  // FPS 갱신용 타이머
 };

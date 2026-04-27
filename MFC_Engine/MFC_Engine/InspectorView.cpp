@@ -187,23 +187,23 @@ void CInspectorView::InitPropList()
 
 	// Position
 	CMFCPropertyGridProperty* pPos = new CMFCPropertyGridProperty(_T("Position"), 0, TRUE);
-	pPos->AddSubItem(new CMFCPropertyGridProperty(_T("X"), (_variant_t)transform->m_position.x, _T("Position X")));
-	pPos->AddSubItem(new CMFCPropertyGridProperty(_T("Y"), (_variant_t)transform->m_position.y, _T("Position Y")));
-	pPos->AddSubItem(new CMFCPropertyGridProperty(_T("Z"), (_variant_t)transform->m_position.z, _T("Position Z")));
+	pPos->AddSubItem(new CMFCPropertyGridProperty(_T("X"), (_variant_t)transform->m_vPosition.x, _T("Position X")));
+	pPos->AddSubItem(new CMFCPropertyGridProperty(_T("Y"), (_variant_t)transform->m_vPosition.y, _T("Position Y")));
+	pPos->AddSubItem(new CMFCPropertyGridProperty(_T("Z"), (_variant_t)transform->m_vPosition.z, _T("Position Z")));
 	pTransformGroup->AddSubItem(pPos);
 
 	// Rotation
 	CMFCPropertyGridProperty* pRot = new CMFCPropertyGridProperty(_T("Rotation"), 0, TRUE);
-	pRot->AddSubItem(new CMFCPropertyGridProperty(_T("X"), (_variant_t)transform->m_rotation.x, _T("Rotation X")));
-	pRot->AddSubItem(new CMFCPropertyGridProperty(_T("Y"), (_variant_t)transform->m_rotation.y, _T("Rotation Y")));
-	pRot->AddSubItem(new CMFCPropertyGridProperty(_T("Z"), (_variant_t)transform->m_rotation.z, _T("Rotation Z")));
+	pRot->AddSubItem(new CMFCPropertyGridProperty(_T("X"), (_variant_t)transform->m_vRotation.x, _T("Rotation X")));
+	pRot->AddSubItem(new CMFCPropertyGridProperty(_T("Y"), (_variant_t)transform->m_vRotation.y, _T("Rotation Y")));
+	pRot->AddSubItem(new CMFCPropertyGridProperty(_T("Z"), (_variant_t)transform->m_vRotation.z, _T("Rotation Z")));
 	pTransformGroup->AddSubItem(pRot);
 
 	// Scale
 	CMFCPropertyGridProperty* pScale = new CMFCPropertyGridProperty(_T("Scale"), 0, TRUE);
-	pScale->AddSubItem(new CMFCPropertyGridProperty(_T("X"), (_variant_t)transform->m_scale.x, _T("Scale X")));
-	pScale->AddSubItem(new CMFCPropertyGridProperty(_T("Y"), (_variant_t)transform->m_scale.y, _T("Scale Y")));
-	pScale->AddSubItem(new CMFCPropertyGridProperty(_T("Z"), (_variant_t)transform->m_scale.z, _T("Scale Z")));
+	pScale->AddSubItem(new CMFCPropertyGridProperty(_T("X"), (_variant_t)transform->m_vScale.x, _T("Scale X")));
+	pScale->AddSubItem(new CMFCPropertyGridProperty(_T("Y"), (_variant_t)transform->m_vScale.y, _T("Scale Y")));
+	pScale->AddSubItem(new CMFCPropertyGridProperty(_T("Z"), (_variant_t)transform->m_vScale.z, _T("Scale Z")));
 	pTransformGroup->AddSubItem(pScale);
 
 	m_wndPropList.AddProperty(pTransformGroup);
@@ -215,7 +215,7 @@ void CInspectorView::InitPropList()
 	{
 		CMFCPropertyGridProperty* pGroup = new CMFCPropertyGridProperty(_T("Mesh Filter"));
 		
-		CMFCPropertyGridProperty* pMeshProp = new CMFCPropertyGridProperty(_T("Mesh"), (_variant_t)meshFilter->m_meshName.c_str(), _T("Select Mesh Type"));
+		CMFCPropertyGridProperty* pMeshProp = new CMFCPropertyGridProperty(_T("Mesh"), (_variant_t)meshFilter->m_strMeshName.c_str(), _T("Select Mesh Type"));
 		pMeshProp->AddOption(_T("Cube"));
 		pMeshProp->AddOption(_T("Capsule"));
 		pMeshProp->AddOption(_T("Sphere"));
@@ -232,7 +232,7 @@ void CInspectorView::InitPropList()
 	if (meshRenderer)
 	{
 		CMFCPropertyGridProperty* pGroup = new CMFCPropertyGridProperty(_T("Mesh Renderer"));
-		pGroup->AddSubItem(new CMFCPropertyGridProperty(_T("Enabled"), (_variant_t)meshRenderer->m_isEnabled, _T("Enable/Disable Rendering")));
+		pGroup->AddSubItem(new CMFCPropertyGridProperty(_T("Enabled"), (_variant_t)meshRenderer->m_bIsEnabled, _T("Enable/Disable Rendering")));
 		m_wndPropList.AddProperty(pGroup);
 		pGroup->Expand(TRUE);
 	}
@@ -256,21 +256,21 @@ LRESULT CInspectorView::OnPropertyChanged(WPARAM, LPARAM lParam)
 		CString parentName = pParent->GetName();
 		if (parentName == _T("Position"))
 		{
-			if (name == _T("X")) transform->m_position.x = (float)value;
-			else if (name == _T("Y")) transform->m_position.y = (float)value;
-			else if (name == _T("Z")) transform->m_position.z = (float)value;
+			if (name == _T("X")) transform->m_vPosition.x = (float)value;
+			else if (name == _T("Y")) transform->m_vPosition.y = (float)value;
+			else if (name == _T("Z")) transform->m_vPosition.z = (float)value;
 		}
 		else if (parentName == _T("Rotation"))
 		{
-			if (name == _T("X")) transform->m_rotation.x = (float)value;
-			else if (name == _T("Y")) transform->m_rotation.y = (float)value;
-			else if (name == _T("Z")) transform->m_rotation.z = (float)value;
+			if (name == _T("X")) transform->m_vRotation.x = (float)value;
+			else if (name == _T("Y")) transform->m_vRotation.y = (float)value;
+			else if (name == _T("Z")) transform->m_vRotation.z = (float)value;
 		}
 		else if (parentName == _T("Scale"))
 		{
-			if (name == _T("X")) transform->m_scale.x = (float)value;
-			else if (name == _T("Y")) transform->m_scale.y = (float)value;
-			else if (name == _T("Z")) transform->m_scale.z = (float)value;
+			if (name == _T("X")) transform->m_vScale.x = (float)value;
+			else if (name == _T("Y")) transform->m_vScale.y = (float)value;
+			else if (name == _T("Z")) transform->m_vScale.z = (float)value;
 		}
 	}
 
@@ -278,14 +278,14 @@ LRESULT CInspectorView::OnPropertyChanged(WPARAM, LPARAM lParam)
 	auto meshFilter = m_pSelectedObj->GetComponent<CMeshFilter>();
 	if (meshFilter && name == _T("Mesh"))
 	{
-		meshFilter->m_meshName = (LPCTSTR)(_bstr_t)value;
+		meshFilter->m_strMeshName = (LPCTSTR)(_bstr_t)value;
 	}
 
 	// Mesh Renderer
 	auto meshRenderer = m_pSelectedObj->GetComponent<CMeshRenderer>();
 	if (meshRenderer && name == _T("Enabled"))
 	{
-		meshRenderer->m_isEnabled = (bool)value;
+		meshRenderer->m_bIsEnabled = (bool)value;
 	}
 
 	return 0;

@@ -1,6 +1,8 @@
 cbuffer SceneConstantBuffer : register(b0)
 {
     float4x4 matWVP;
+    float4 objectColorID;
+    float4 meshColor;
 };
 
 struct VS_INPUT
@@ -27,5 +29,7 @@ PS_INPUT VSMain(VS_INPUT input)
 
 float4 PSMain(PS_INPUT input) : SV_TARGET
 {
+    if (meshColor.a > 0.0f)
+        return meshColor;
     return input.color;
 }

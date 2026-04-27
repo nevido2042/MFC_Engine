@@ -20,6 +20,7 @@ public:
 public:
 	CInspectorView* GetInspectorView() { return &m_wndInspectorView; }
 	CHierarchyView* GetHierarchyView() { return &m_wndHierarchyView; }
+	CSceneView* GetSceneView() { return &m_wndSceneView; }
 
 // 작업입니다.
 public:

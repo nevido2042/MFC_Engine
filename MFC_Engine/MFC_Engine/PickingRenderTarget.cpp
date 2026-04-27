@@ -183,8 +183,16 @@ UINT CPickingRenderTarget::GetPickedID()
 
         m_readbackBuffer->Unmap(0, nullptr);
 
-        // Decode ID: assuming R is least significant byte
-        UINT id = r | (g << 8) | (b << 16) | (a << 24);
+        // Decode ID
+        // R, G, B 채널을 합쳐서 ID 복원
+        UINT id = r | (g << 8) | (b << 16);
+        
+        // 기즈모 ID 처리 (B채널이 255인 경우 기즈모로 판단)
+        if (b == 255 && g == 0)
+        {
+            id |= (a << 24);
+        }
+        
         return id;
     }
     return 0;

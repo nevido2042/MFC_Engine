@@ -2,7 +2,7 @@
 #include "Mesh.h"
 
 CMesh::CMesh()
-    : m_vertexCount(0)
+    : m_nVertexCount(0)
 {
     m_vertexBufferView = {};
 }
@@ -13,8 +13,8 @@ CMesh::~CMesh()
 
 void CMesh::Initialize(ComPtr<ID3D12Device> device, const std::vector<Vertex>& vertices)
 {
-    m_vertexCount = static_cast<UINT>(vertices.size());
-    const UINT vertexBufferSize = m_vertexCount * sizeof(Vertex);
+    m_nVertexCount = static_cast<UINT>(vertices.size());
+    const UINT vertexBufferSize = m_nVertexCount * sizeof(Vertex);
 
     // Heap Properties 설정
     D3D12_HEAP_PROPERTIES heapProps = {};
@@ -44,17 +44,17 @@ void CMesh::Initialize(ComPtr<ID3D12Device> device, const std::vector<Vertex>& v
         &resDesc,
         D3D12_RESOURCE_STATE_GENERIC_READ,
         nullptr,
-        IID_PPV_ARGS(&m_vertexBuffer)));
+        IID_PPV_ARGS(&m_pVertexBuffer)));
 
     // 데이터 복사
     UINT8* pVertexDataBegin;
     D3D12_RANGE readRange = { 0, 0 };
-    ThrowIfFailed(m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+    ThrowIfFailed(m_pVertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
     memcpy(pVertexDataBegin, vertices.data(), vertexBufferSize);
-    m_vertexBuffer->Unmap(0, nullptr);
+    m_pVertexBuffer->Unmap(0, nullptr);
 
     // 뷰 설정
-    m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
+    m_vertexBufferView.BufferLocation = m_pVertexBuffer->GetGPUVirtualAddress();
     m_vertexBufferView.StrideInBytes = sizeof(Vertex);
     m_vertexBufferView.SizeInBytes = vertexBufferSize;
 }
@@ -62,5 +62,5 @@ void CMesh::Initialize(ComPtr<ID3D12Device> device, const std::vector<Vertex>& v
 void CMesh::Render(ComPtr<ID3D12GraphicsCommandList> commandList)
 {
     commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-    commandList->DrawInstanced(m_vertexCount, 1, 0, 0);
+    commandList->DrawInstanced(m_nVertexCount, 1, 0, 0);
 }

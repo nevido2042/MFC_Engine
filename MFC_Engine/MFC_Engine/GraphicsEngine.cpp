@@ -7,13 +7,14 @@
 #include "Mesh.h"
 #include "PickingSystem.h"
 #include "SceneManager.h"
+#include "Gizmo.h"
 
 // 쉐이더 컴파일 라이브러리 링크
 
 CGraphicsEngine::CGraphicsEngine()
-    : m_isInitialized(false)
-    , m_width(0)
-    , m_height(0)
+    : m_bIsInitialized(false)
+    , m_nWidth(0)
+    , m_nHeight(0)
 {
 }
 
@@ -26,22 +27,22 @@ CGraphicsEngine::~CGraphicsEngine()
  */
 bool CGraphicsEngine::Initialize(HWND hWnd, int width, int height)
 {
-    m_width = (width > 0) ? width : 1;
-    m_height = (height > 0) ? height : 1;
+    m_nWidth = (width > 0) ? width : 1;
+    m_nHeight = (height > 0) ? height : 1;
 
     m_timeManager.Initialize();
 
     m_pDevice = std::make_unique<CDevice>();
-    m_pDevice->Initialize(hWnd, m_width, m_height);
+    m_pDevice->Initialize(hWnd, m_nWidth, m_nHeight);
 
     CreateRootSignature();
     CreatePipelineState();
 
-    CPickingSystem::GetInstance().Initialize(m_pDevice->GetDevice(), m_rootSignature, m_width, m_height);
+    CPickingSystem::GetInstance().Initialize(m_pDevice->GetDevice(), m_rootSignature, m_nWidth, m_nHeight);
     CPrimitiveGenerator::GetInstance().Initialize(m_pDevice->GetDevice());
     CreateConstantBuffer();
 
-    m_isInitialized = true;
+    m_bIsInitialized = true;
     return true;
 }
 
@@ -145,6 +146,11 @@ void CGraphicsEngine::CreatePipelineState()
     psoDesc.SampleDesc.Count = 1;
 
     ThrowIfFailed(m_pDevice->GetDevice()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
+
+    // --- 기즈모용 PSO 생성 (깊이 테스트 비활성화) ---
+    psoDesc.DepthStencilState.DepthEnable = FALSE;
+    psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+    ThrowIfFailed(m_pDevice->GetDevice()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateGizmo)));
 }
 
 
@@ -159,17 +165,9 @@ void CGraphicsEngine::CreateConstantBuffer()
 }
 
 
-/**
- * @brief 실시간 렌더링 루프를 수행합니다.
- */
-void CGraphicsEngine::Render()
+void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGameObject> pSelectedObj, CGizmo* pGizmo)
 {
-    Render(nullptr);
-}
-
-void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene)
-{
-    if (!m_isInitialized) return;
+    if (!m_bIsInitialized) return;
 
     std::lock_guard<std::mutex> lock(m_mutex);
     m_timeManager.Update();
@@ -189,6 +187,9 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene)
         {
             RenderGameObject(pObj, objIndex);
         }
+
+        // 기즈모 렌더링 (씬 오브젝트 다음)
+        RenderGizmo(pGizmo, pSelectedObj);
     }
     else
     {
@@ -202,7 +203,7 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene)
             matView = CSceneManager::GetInstance().GetEditorCamera().GetViewMatrix();
         }
 
-        float aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
+        float aspectRatio = static_cast<float>(m_nWidth) / static_cast<float>(m_nHeight);
         DirectX::XMMATRIX matProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 100.0f);
         DirectX::XMMATRIX matWVP = matWorld * matView * matProj;
 
@@ -224,14 +225,14 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene)
 
 void CGraphicsEngine::Resize(int width, int height)
 {
-    if (!m_isInitialized) return;
+    if (!m_bIsInitialized) return;
     if (width == 0 || height == 0) return;
-    if (m_width == width && m_height == height) return;
+    if (m_nWidth == width && m_nHeight == height) return;
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    m_width = width;
-    m_height = height;
+    m_nWidth = width;
+    m_nHeight = height;
 
     m_pDevice->Resize(width, height);
     CPickingSystem::GetInstance().Resize(m_pDevice->GetDevice(), width, height);
@@ -244,7 +245,7 @@ void CGraphicsEngine::RenderGameObject(std::shared_ptr<CGameObject> pObj, int& o
     if (objIndex >= 1024) return;
 
     auto pRenderer = pObj->GetComponent<CMeshRenderer>();
-    if (pRenderer && pRenderer->m_isEnabled)
+    if (pRenderer && pRenderer->m_bIsEnabled)
     {
         auto pFilter = pObj->GetComponent<CMeshFilter>();
         if (pFilter)
@@ -261,7 +262,7 @@ void CGraphicsEngine::RenderGameObject(std::shared_ptr<CGameObject> pObj, int& o
                     matView = CSceneManager::GetInstance().GetEditorCamera().GetViewMatrix();
                 }
 
-                float aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
+                float aspectRatio = static_cast<float>(m_nWidth) / static_cast<float>(m_nHeight);
                 DirectX::XMMATRIX matProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 100.0f);
 
                 DirectX::XMMATRIX matWVP = matWorld * matView * matProj;
@@ -270,12 +271,13 @@ void CGraphicsEngine::RenderGameObject(std::shared_ptr<CGameObject> pObj, int& o
                 SceneConstantBuffer cb = {};
                 DirectX::XMStoreFloat4x4(&cb.matWVP, DirectX::XMMatrixTranspose(matWVP));
                 cb.objectColorID = { 0.0f, 0.0f, 0.0f, 0.0f };
+                cb.meshColor = { 0.0f, 0.0f, 0.0f, 0.0f }; // 기본적으로 무시
                 m_pConstantBuffer->Update(objIndex, &cb, sizeof(cb));
 
                 // 해당 오브젝트의 CBV 연결 및 그리기
                 m_pDevice->GetCommandList()->SetGraphicsRootConstantBufferView(0, m_pConstantBuffer->GetGPUVirtualAddress(objIndex));
 
-                auto pMesh = CPrimitiveGenerator::GetInstance().GetPrimitiveMesh(pFilter->m_meshName);
+                auto pMesh = CPrimitiveGenerator::GetInstance().GetPrimitiveMesh(pFilter->m_strMeshName);
                 if (pMesh)
                 {
                     pMesh->Render(m_pDevice->GetCommandList());
@@ -294,28 +296,61 @@ void CGraphicsEngine::RenderGameObject(std::shared_ptr<CGameObject> pObj, int& o
 }
 
 
-UINT CGraphicsEngine::Pick(int x, int y)
+UINT CGraphicsEngine::Pick(int x, int y, std::shared_ptr<CGameObject> pSelectedObj, CGizmo* pGizmo)
 {
-    if (!m_isInitialized) return 0;
+    if (!m_bIsInitialized) return 0;
     
     std::lock_guard<std::mutex> lock(m_mutex);
     
-    // 피킹 렌더링 수행
+    // 할당자를 Reset하기 전에 GPU가 현재 사용 중인 명령들을 모두 완료할 때까지 대기
+    m_pDevice->WaitGPU();
+    
+    auto commandAllocator = m_pDevice->GetCommandAllocator();
+    auto commandList = m_pDevice->GetCommandList();
+    auto commandQueue = m_pDevice->GetCommandQueue();
+
+    // 커맨드 리스트 초기화
+    commandAllocator->Reset();
+    commandList->Reset(commandAllocator, nullptr);
+
+    // 피킹 렌더링 수행 (명령 기록)
     CPickingSystem::GetInstance().Pick(x, y, 
         m_pDevice->GetDevice(), 
-        m_pDevice->GetCommandQueue(), 
-        m_pDevice->GetCommandAllocator(), 
-        m_pDevice->GetCommandList(), 
+        commandQueue, 
+        commandAllocator, 
+        commandList, 
         m_rootSignature.Get(), 
         m_pConstantBuffer->GetResource(), 
         m_pConstantBuffer->GetMappedData(), 
-        m_width, m_height);
+        m_nWidth, m_nHeight,
+        pSelectedObj, pGizmo);
     
+    // 커맨드 리스트 닫기 및 실행
+    ThrowIfFailed(commandList->Close());
+    ID3D12CommandList* ppCommandLists[] = { commandList };
+    commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
     // GPU가 피킹 및 픽셀 복사를 완료할 때까지 명시적으로 대기
     m_pDevice->WaitGPU();
 
     // 결과 읽기
     return CPickingSystem::GetInstance().GetPickedID();
+}
+
+void CGraphicsEngine::RenderGizmo(CGizmo* pGizmo, std::shared_ptr<CGameObject> pSelectedObj)
+{
+    if (pGizmo && pSelectedObj)
+    {
+        auto commandList = m_pDevice->GetCommandList();
+        
+        // 기즈모 전용 PSO 설정 (깊이 테스트 무시)
+        commandList->SetPipelineState(m_pipelineStateGizmo.Get());
+        
+        pGizmo->Render(commandList, pSelectedObj.get(), m_nWidth, m_nHeight, m_pConstantBuffer.get());
+        
+        // 다시 기본 PSO로 복구 (필요한 경우)
+        commandList->SetPipelineState(m_pipelineState.Get());
+    }
 }
 
 void CGraphicsEngine::WaitForPreviousFrame()

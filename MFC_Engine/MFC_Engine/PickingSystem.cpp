@@ -1,13 +1,17 @@
 #include "pch.h"
 #include "PickingSystem.h"
-#include "GraphicsEngine.h"
-#include "SceneManager.h"
+#include "PickingRenderTarget.h"
 #include "GameObject.h"
+#include "Transform.h"
 #include "MeshRenderer.h"
 #include "MeshFilter.h"
-#include "Transform.h"
+#include "Scene.h"
+#include "SceneManager.h"
+#include "Camera.h"
 #include "PrimitiveGenerator.h"
-
+#include "Mesh.h"
+#include "Gizmo.h"
+#include "EngineStructs.h"
 
 void CPickingSystem::Initialize(ComPtr<ID3D12Device> device, ComPtr<ID3D12RootSignature> rootSignature, int width, int height)
 {
@@ -36,6 +40,7 @@ void CPickingSystem::Initialize(ComPtr<ID3D12Device> device, ComPtr<ID3D12RootSi
     psoDesc.VS = { vertexShader->GetBufferPointer(), vertexShader->GetBufferSize() };
     psoDesc.PS = { pixelShader->GetBufferPointer(), pixelShader->GetBufferSize() };
     
+    // 기본 래스터라이저 설정 (수동 초기화)
     psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
     psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
     psoDesc.RasterizerState.FrontCounterClockwise = FALSE;
@@ -48,6 +53,7 @@ void CPickingSystem::Initialize(ComPtr<ID3D12Device> device, ComPtr<ID3D12RootSi
     psoDesc.RasterizerState.ForcedSampleCount = 0;
     psoDesc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
+    // 기본 블렌드 설정 (수동 초기화)
     psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
     psoDesc.BlendState.IndependentBlendEnable = FALSE;
     const D3D12_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
@@ -61,11 +67,12 @@ void CPickingSystem::Initialize(ComPtr<ID3D12Device> device, ComPtr<ID3D12RootSi
     for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
         psoDesc.BlendState.RenderTarget[i] = defaultRenderTargetBlendDesc;
 
+    // 깊이 스텐실 설정 (수동 초기화)
     psoDesc.DepthStencilState.DepthEnable = TRUE;
     psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
     psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
     psoDesc.DepthStencilState.StencilEnable = FALSE;
-    
+
     psoDesc.SampleMask = UINT_MAX;
     psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     psoDesc.NumRenderTargets = 1;
@@ -83,122 +90,126 @@ void CPickingSystem::Initialize(ComPtr<ID3D12Device> device, ComPtr<ID3D12RootSi
 void CPickingSystem::Resize(ComPtr<ID3D12Device> device, int width, int height)
 {
     if (m_pPickingRenderTarget)
+    {
         m_pPickingRenderTarget->Resize(device.Get(), width, height);
+    }
 }
 
-UINT CPickingSystem::Pick(int x, int y, ID3D12Device* device, ID3D12CommandQueue* queue, ID3D12CommandAllocator* allocator, ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* rootSignature, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin, int width, int height)
+UINT CPickingSystem::Pick(int x, int y, ID3D12Device* device, ID3D12CommandQueue* queue, ID3D12CommandAllocator* allocator, ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* rootSignature, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin, int width, int height, std::shared_ptr<CGameObject> pSelectedObj, CGizmo* pGizmo)
 {
     if (!m_pPickingRenderTarget) return 0;
 
-    // 명령 리스트 리셋
-    ThrowIfFailed(allocator->Reset());
-    ThrowIfFailed(commandList->Reset(allocator, m_pickingPSO.Get()));
-    commandList->SetGraphicsRootSignature(rootSignature);
+    // 1. 렌더링 패스 수행
+    RenderPickingPass(CSceneManager::GetInstance().GetActiveScene(), commandList, rootSignature, width, height, constantBuffer, cbvDataBegin, pSelectedObj, pGizmo);
 
-    // 피킹 패스 렌더링
-    RenderPickingPass(CSceneManager::GetInstance().GetActiveScene(), commandList, width, height, constantBuffer, cbvDataBegin);
-    
-    // 픽셀 읽기
+    // 2. 결과 읽기 예약
     m_pPickingRenderTarget->ReadPixelAsync(commandList, x, y);
 
-    ThrowIfFailed(commandList->Close());
-
-    ID3D12CommandList* ppCommandLists[] = { commandList };
-    queue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-    return 0; // 이제 결과는 GetPickedID()로 별도 호출
+    return 0;
 }
 
 UINT CPickingSystem::GetPickedID()
 {
     if (m_pPickingRenderTarget)
+    {
         return m_pPickingRenderTarget->GetPickedID();
+    }
     return 0;
 }
 
-void CPickingSystem::RenderPickingPass(std::shared_ptr<CScene> pScene, ID3D12GraphicsCommandList* commandList, int width, int height, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin)
+void CPickingSystem::RenderPickingPass(std::shared_ptr<CScene> pScene, ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* rootSignature, int width, int height, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin, std::shared_ptr<CGameObject> pSelectedObj, CGizmo* pGizmo)
 {
-    D3D12_VIEWPORT viewport = { 0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f };
-    D3D12_RECT scissorRect = { 0, 0, width, height };
+    if (!pScene || !m_pPickingRenderTarget || !m_pickingPSO) return;
 
-    commandList->RSSetViewports(1, &viewport);
-    commandList->RSSetScissorRects(1, &scissorRect);
+    // 루트 시그니처 및 PSO 설정
+    commandList->SetGraphicsRootSignature(rootSignature);
+    commandList->SetPipelineState(m_pickingPSO.Get());
+    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+    // 렌더 타겟 설정
     auto rtv = m_pPickingRenderTarget->GetRTV();
     auto dsv = m_pPickingRenderTarget->GetDSV();
-
     commandList->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
-    
+
+    // 클리어
     const float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
     commandList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
     commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-    // RootSignature는 외부에서 제공 (GraphicsEngine과 공유)
-    // commandList->SetGraphicsRootSignature(rootSignature); // 이미 리셋 시 설정됨? 아님 명시적으로 해야함
-    // GraphicsEngine::Pick에서 리셋 시 PSO는 설정하지만 RootSignature는 안할 수 있음
-    
-    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // 뷰포트 및 시저 설정
+    D3D12_VIEWPORT viewport = { 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
+    D3D12_RECT scissorRect = { 0, 0, width, height };
+    commandList->RSSetViewports(1, &viewport);
+    commandList->RSSetScissorRects(1, &scissorRect);
 
-    if (pScene)
+    // 씬 오브젝트 렌더링
+    int objIndex = 1;
+    for (auto& pObj : pScene->GetGameObjects())
     {
-        int objIndex = 0;
-        for (auto& pObj : pScene->GetGameObjects())
-        {
-            RenderGameObjectForPicking(pObj, objIndex, commandList, width, height, constantBuffer, cbvDataBegin);
-        }
+        RenderGameObjectForPicking(pObj, objIndex, commandList, width, height, constantBuffer, cbvDataBegin);
+    }
+
+    // 기즈모 렌더링 (선택된 오브젝트가 있을 경우)
+    if (pSelectedObj && pGizmo)
+    {
+        // 기즈모가 도형보다 우선적으로 선택되도록 깊이 버퍼를 클리어하여 덧그림
+        commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+        RenderGizmoForPicking(pSelectedObj, pGizmo, commandList, width, height, constantBuffer, cbvDataBegin);
     }
 }
 
-void CPickingSystem::RenderGameObjectForPicking(std::shared_ptr<CGameObject> pObj, int& objIndex, ID3D12GraphicsCommandList* commandList, int width, int height, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin)
+void CPickingSystem::RenderGameObjectForPicking(std::shared_ptr<CGameObject> pObj, int& cbIndex, ID3D12GraphicsCommandList* commandList, int width, int height, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin)
 {
-    if (objIndex >= 1024) return;
+    if (!pObj) return;
 
+    auto pTransform = pObj->GetTransform();
+    auto pFilter = pObj->GetComponent<CMeshFilter>();
     auto pRenderer = pObj->GetComponent<CMeshRenderer>();
-    if (pRenderer && pRenderer->m_isEnabled)
+
+    if (pTransform && pFilter && pRenderer && pRenderer->m_bIsEnabled)
     {
-        auto pFilter = pObj->GetComponent<CMeshFilter>();
-        if (pFilter)
+        auto pMesh = CPrimitiveGenerator::GetInstance().GetPrimitiveMesh(pFilter->m_strMeshName);
+        if (pMesh)
         {
-            auto pTransform = pObj->GetTransform();
-            if (pTransform)
+            DirectX::XMMATRIX matView;
             {
-                DirectX::XMMATRIX matWorld = pTransform->GetWorldMatrix();
-                DirectX::XMMATRIX matView;
-                {
-                    std::lock_guard<std::mutex> camLock(CSceneManager::GetInstance().GetCameraMutex());
-                    matView = CSceneManager::GetInstance().GetEditorCamera().GetViewMatrix();
-                }
-                float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
-                DirectX::XMMATRIX matProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 100.0f);
-
-                DirectX::XMMATRIX matWVP = matWorld * matView * matProj;
-
-                SceneConstantBuffer cb;
-                DirectX::XMStoreFloat4x4(&cb.matWVP, DirectX::XMMatrixTranspose(matWVP));
-                
-                UINT id = pObj->GetID();
-                cb.objectColorID.x = (id & 0xFF) / 255.0f;
-                cb.objectColorID.y = ((id >> 8) & 0xFF) / 255.0f;
-                cb.objectColorID.z = ((id >> 16) & 0xFF) / 255.0f;
-                cb.objectColorID.w = ((id >> 24) & 0xFF) / 255.0f;
-
-                memcpy(cbvDataBegin + (objIndex * 256), &cb, sizeof(cb));
-
-                commandList->SetGraphicsRootConstantBufferView(0, constantBuffer->GetGPUVirtualAddress() + (objIndex * 256));
-
-                auto pMesh = CPrimitiveGenerator::GetInstance().GetPrimitiveMesh(pFilter->m_meshName);
-                if (pMesh)
-                {
-                    pMesh->Render(commandList);
-                }
-
-                objIndex++;
+                std::lock_guard<std::mutex> camLock(CSceneManager::GetInstance().GetCameraMutex());
+                matView = CSceneManager::GetInstance().GetEditorCamera().GetViewMatrix();
             }
+
+            float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+            DirectX::XMMATRIX matProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 1000.0f);
+            DirectX::XMMATRIX matWVP = pTransform->GetWorldMatrix() * matView * matProj;
+
+            SceneConstantBuffer cb = {};
+            DirectX::XMStoreFloat4x4(&cb.matWVP, DirectX::XMMatrixTranspose(matWVP));
+            
+            // 객체의 실제 고유 ID를 피킹 컬러로 사용 (24비트 RGB만 사용, A는 1.0 고정)
+            UINT nID = pObj->GetID();
+            cb.objectColorID.x = (nID & 0xFF) / 255.0f;
+            cb.objectColorID.y = ((nID >> 8) & 0xFF) / 255.0f;
+            cb.objectColorID.z = ((nID >> 16) & 0xFF) / 255.0f;
+            cb.objectColorID.w = 1.0f;
+
+            // 상수 버퍼 인덱스는 별도로 관리 (0~1023 제한 내에서 안전하게 사용)
+            memcpy(cbvDataBegin + cbIndex * 256, &cb, sizeof(cb));
+            commandList->SetGraphicsRootConstantBufferView(0, constantBuffer->GetGPUVirtualAddress() + cbIndex * 256);
+
+            pMesh->Render(commandList);
+            cbIndex++;
         }
     }
 
     for (auto& pChild : pObj->GetChildren())
     {
-        RenderGameObjectForPicking(pChild, objIndex, commandList, width, height, constantBuffer, cbvDataBegin);
+        RenderGameObjectForPicking(pChild, cbIndex, commandList, width, height, constantBuffer, cbvDataBegin);
+    }
+}
+
+void CPickingSystem::RenderGizmoForPicking(std::shared_ptr<CGameObject> pSelectedObj, CGizmo* pGizmo, ID3D12GraphicsCommandList* commandList, int width, int height, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin)
+{
+    if (pGizmo)
+    {
+        pGizmo->RenderForPicking(commandList, pSelectedObj.get(), width, height, constantBuffer, cbvDataBegin);
     }
 }

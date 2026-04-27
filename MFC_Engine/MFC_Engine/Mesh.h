@@ -29,10 +29,10 @@ public:
      */
     void Render(ComPtr<ID3D12GraphicsCommandList> commandList);
 
-    UINT GetVertexCount() const { return m_vertexCount; }
+    UINT GetVertexCount() const { return m_nVertexCount; }
 
 private:
-    ComPtr<ID3D12Resource> m_vertexBuffer;
+    ComPtr<ID3D12Resource> m_pVertexBuffer;
     D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
-    UINT m_vertexCount;
+    UINT m_nVertexCount;
 };

@@ -9,7 +9,7 @@ public:
 
     DirectX::XMMATRIX GetWorldMatrix();
 
-    DirectX::XMFLOAT3 m_position;
-    DirectX::XMFLOAT3 m_rotation;
-    DirectX::XMFLOAT3 m_scale;
+    DirectX::XMFLOAT3 m_vPosition;
+    DirectX::XMFLOAT3 m_vRotation;
+    DirectX::XMFLOAT3 m_vScale;
 };

@@ -2,22 +2,22 @@
 #include "Device.h"
 
 CDevice::CDevice()
-    : m_rtvDescriptorSize(0)
-    , m_dsvDescriptorSize(0)
-    , m_frameIndex(0)
-    , m_fenceEvent(nullptr)
+    : m_nRtvDescriptorSize(0)
+    , m_nDsvDescriptorSize(0)
+    , m_nFrameIndex(0)
+    , m_hFenceEvent(nullptr)
 {
     m_viewport = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
     m_scissorRect = { 0, 0, 0, 0 };
-    for (UINT i = 0; i < FrameCount; i++) m_fenceValues[i] = 0;
+    for (UINT i = 0; i < FrameCount; i++) m_nFenceValues[i] = 0;
 }
 
 CDevice::~CDevice()
 {
-    if (m_device != nullptr)
+    if (m_pDevice != nullptr)
     {
         WaitForPreviousFrame();
-        if (m_fenceEvent) CloseHandle(m_fenceEvent);
+        if (m_hFenceEvent) CloseHandle(m_hFenceEvent);
     }
 }
 
@@ -31,16 +31,16 @@ bool CDevice::Initialize(HWND hWnd, int width, int height)
     CreateDepthStencilBuffer(width, height);
     
     // Command Allocator & List
-    ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
-    ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
-    m_commandList->Close();
+    ThrowIfFailed(m_pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_pCommandAllocator)));
+    ThrowIfFailed(m_pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_pCommandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_pCommandList)));
+    m_pCommandList->Close();
 
     // Fence
-    ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
-    for (UINT i = 0; i < FrameCount; i++) m_fenceValues[i] = 1;
+    ThrowIfFailed(m_pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_pFence)));
+    for (UINT i = 0; i < FrameCount; i++) m_nFenceValues[i] = 1;
 
-    m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-    if (m_fenceEvent == nullptr)
+    m_hFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    if (m_hFenceEvent == nullptr)
     {
         ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
     }
@@ -53,21 +53,21 @@ bool CDevice::Initialize(HWND hWnd, int width, int height)
 
 void CDevice::Resize(int width, int height)
 {
-    if (m_device == nullptr) return;
+    if (m_pDevice == nullptr) return;
     if (width == 0 || height == 0) return;
 
     WaitForPreviousFrame();
 
     for (UINT n = 0; n < FrameCount; n++)
     {
-        m_renderTargets[n].Reset();
+        m_pRenderTargets[n].Reset();
     }
 
     DXGI_SWAP_CHAIN_DESC desc = {};
-    m_swapChain->GetDesc(&desc);
-    ThrowIfFailed(m_swapChain->ResizeBuffers(FrameCount, width, height, desc.BufferDesc.Format, desc.Flags));
+    m_pSwapChain->GetDesc(&desc);
+    ThrowIfFailed(m_pSwapChain->ResizeBuffers(FrameCount, width, height, desc.BufferDesc.Format, desc.Flags));
 
-    m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+    m_nFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 
     CreateRenderTargets();
     CreateDepthStencilBuffer(width, height);
@@ -78,49 +78,49 @@ void CDevice::Resize(int width, int height)
 
 void CDevice::PrepareRender()
 {
-    m_commandAllocator->Reset();
-    m_commandList->Reset(m_commandAllocator.Get(), nullptr);
+    m_pCommandAllocator->Reset();
+    m_pCommandList->Reset(m_pCommandAllocator.Get(), nullptr);
 
-    m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    m_pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pRenderTargets[m_nFrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = GetRtvHandle();
     D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = GetDsvHandle();
 
     const float clearColor[] = { 0.2f, 0.2f, 0.3f, 1.0f };
-    m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-    m_commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    m_pCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+    m_pCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-    m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
-    m_commandList->RSSetViewports(1, &m_viewport);
-    m_commandList->RSSetScissorRects(1, &m_scissorRect);
+    m_pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+    m_pCommandList->RSSetViewports(1, &m_viewport);
+    m_pCommandList->RSSetScissorRects(1, &m_scissorRect);
 }
 
 void CDevice::SubmitRender()
 {
-    m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+    m_pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pRenderTargets[m_nFrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
-    ThrowIfFailed(m_commandList->Close());
+    ThrowIfFailed(m_pCommandList->Close());
 
-    ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
-    m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+    ID3D12CommandList* ppCommandLists[] = { m_pCommandList.Get() };
+    m_pCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
-    ThrowIfFailed(m_swapChain->Present(1, 0));
+    ThrowIfFailed(m_pSwapChain->Present(1, 0));
 
     WaitForPreviousFrame();
 }
 
 void CDevice::WaitForPreviousFrame()
 {
-    UINT64 fenceValue = m_fenceValues[m_frameIndex]++;
-    ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), fenceValue));
+    UINT64 fenceValue = m_nFenceValues[m_nFrameIndex]++;
+    ThrowIfFailed(m_pCommandQueue->Signal(m_pFence.Get(), fenceValue));
 
-    if (m_fence->GetCompletedValue() < fenceValue)
+    if (m_pFence->GetCompletedValue() < fenceValue)
     {
-        ThrowIfFailed(m_fence->SetEventOnCompletion(fenceValue, m_fenceEvent));
-        WaitForSingleObject(m_fenceEvent, INFINITE);
+        ThrowIfFailed(m_pFence->SetEventOnCompletion(fenceValue, m_hFenceEvent));
+        WaitForSingleObject(m_hFenceEvent, INFINITE);
     }
     
-    m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+    m_nFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 }
 
 void CDevice::WaitGPU()
@@ -129,25 +129,25 @@ void CDevice::WaitGPU()
     static UINT64 waitValue = 100000; // 충분히 큰 값부터 시작하거나 별도 관리
     waitValue++;
     
-    ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), waitValue));
+    ThrowIfFailed(m_pCommandQueue->Signal(m_pFence.Get(), waitValue));
     
-    if (m_fence->GetCompletedValue() < waitValue)
+    if (m_pFence->GetCompletedValue() < waitValue)
     {
-        ThrowIfFailed(m_fence->SetEventOnCompletion(waitValue, m_fenceEvent));
-        WaitForSingleObject(m_fenceEvent, INFINITE);
+        ThrowIfFailed(m_pFence->SetEventOnCompletion(waitValue, m_hFenceEvent));
+        WaitForSingleObject(m_hFenceEvent, INFINITE);
     }
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE CDevice::GetRtvHandle() const
 {
-    D3D12_CPU_DESCRIPTOR_HANDLE handle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
-    handle.ptr += m_frameIndex * m_rtvDescriptorSize;
+    D3D12_CPU_DESCRIPTOR_HANDLE handle = m_pRtvHeap->GetCPUDescriptorHandleForHeapStart();
+    handle.ptr += m_nFrameIndex * m_nRtvDescriptorSize;
     return handle;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE CDevice::GetDsvHandle() const
 {
-    return m_dsvHeap->GetCPUDescriptorHandleForHeapStart();
+    return m_pDsvHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
 void CDevice::CreateDevice()
@@ -156,11 +156,11 @@ void CDevice::CreateDevice()
     ComPtr<IDXGIFactory4> factory;
     ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory)));
 
-    if (FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_device))))
+    if (FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_pDevice))))
     {
         ComPtr<IDXGIAdapter1> warpAdapter;
         ThrowIfFailed(factory->EnumWarpAdapter(IID_PPV_ARGS(&warpAdapter)));
-        ThrowIfFailed(D3D12CreateDevice(warpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_device)));
+        ThrowIfFailed(D3D12CreateDevice(warpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_pDevice)));
     }
 }
 
@@ -169,7 +169,7 @@ void CDevice::CreateCommandQueue()
     D3D12_COMMAND_QUEUE_DESC queueDesc = {};
     queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-    ThrowIfFailed(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
+    ThrowIfFailed(m_pDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_pCommandQueue)));
 }
 
 void CDevice::CreateSwapChain(HWND hWnd, int width, int height)
@@ -187,10 +187,10 @@ void CDevice::CreateSwapChain(HWND hWnd, int width, int height)
     swapChainDesc.SampleDesc.Count = 1;
 
     ComPtr<IDXGISwapChain1> swapChain;
-    ThrowIfFailed(factory->CreateSwapChainForHwnd(m_commandQueue.Get(), hWnd, &swapChainDesc, nullptr, nullptr, &swapChain));
+    ThrowIfFailed(factory->CreateSwapChainForHwnd(m_pCommandQueue.Get(), hWnd, &swapChainDesc, nullptr, nullptr, &swapChain));
     ThrowIfFailed(factory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER));
-    ThrowIfFailed(swapChain.As(&m_swapChain));
-    m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+    ThrowIfFailed(swapChain.As(&m_pSwapChain));
+    m_nFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 }
 
 void CDevice::CreateDescriptorHeaps()
@@ -199,25 +199,25 @@ void CDevice::CreateDescriptorHeaps()
     rtvHeapDesc.NumDescriptors = FrameCount;
     rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    ThrowIfFailed(m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
-    m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    ThrowIfFailed(m_pDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_pRtvHeap)));
+    m_nRtvDescriptorSize = m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
     D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
     dsvHeapDesc.NumDescriptors = 1;
     dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
     dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    ThrowIfFailed(m_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
-    m_dsvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+    ThrowIfFailed(m_pDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_pDsvHeap)));
+    m_nDsvDescriptorSize = m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 }
 
 void CDevice::CreateRenderTargets()
 {
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_pRtvHeap->GetCPUDescriptorHandleForHeapStart();
     for (UINT n = 0; n < FrameCount; n++)
     {
-        ThrowIfFailed(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
-        m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
-        rtvHandle.ptr += m_rtvDescriptorSize;
+        ThrowIfFailed(m_pSwapChain->GetBuffer(n, IID_PPV_ARGS(&m_pRenderTargets[n])));
+        m_pDevice->CreateRenderTargetView(m_pRenderTargets[n].Get(), nullptr, rtvHandle);
+        rtvHandle.ptr += m_nRtvDescriptorSize;
     }
 }
 
@@ -242,14 +242,14 @@ void CDevice::CreateDepthStencilBuffer(int width, int height)
     D3D12_HEAP_PROPERTIES depthHeapProps = {};
     depthHeapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
 
-    ThrowIfFailed(m_device->CreateCommittedResource(
+    ThrowIfFailed(m_pDevice->CreateCommittedResource(
         &depthHeapProps,
         D3D12_HEAP_FLAG_NONE,
         &depthResourceDesc,
         D3D12_RESOURCE_STATE_DEPTH_WRITE,
         &depthOptimizedClearValue,
-        IID_PPV_ARGS(&m_depthStencilBuffer)
+        IID_PPV_ARGS(&m_pDepthStencilBuffer)
     ));
 
-    m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), nullptr, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
+    m_pDevice->CreateDepthStencilView(m_pDepthStencilBuffer.Get(), nullptr, m_pDsvHeap->GetCPUDescriptorHandleForHeapStart());
 }

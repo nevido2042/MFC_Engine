@@ -146,11 +146,19 @@ void CHierarchyView::OnSelChanged(NMHDR* pNMHDR, LRESULT* pResult)
 	{
 		auto pObj = m_mapGameObjects[hSelected];
 		pMainFrame->GetInspectorView()->SetSelectedGameObject(pObj);
+		if (pMainFrame->GetSceneView())
+		{
+			pMainFrame->GetSceneView()->SetSelectedGameObject(pObj);
+		}
 	}
 	else
 	{
 		// 씬 루트가 선택되었거나 선택이 해제된 경우
 		pMainFrame->GetInspectorView()->SetSelectedGameObject(nullptr);
+		if (pMainFrame->GetSceneView())
+		{
+			pMainFrame->GetSceneView()->SetSelectedGameObject(nullptr);
+		}
 	}
 }
 
@@ -264,6 +272,10 @@ void CHierarchyView::OnDelete()
 		if (pMainFrame)
 		{
 			pMainFrame->GetInspectorView()->SetSelectedGameObject(nullptr);
+			if (pMainFrame->GetSceneView())
+			{
+				pMainFrame->GetSceneView()->SetSelectedGameObject(nullptr);
+			}
 		}
 
 		FillHierarchyView();
@@ -291,7 +303,7 @@ void CHierarchyView::CreatePrimitive(const std::wstring& name, const std::wstrin
 
 	// Mesh 컴포넌트 추가
 	auto pFilter = newObj->AddComponent<CMeshFilter>();
-	pFilter->m_meshName = meshName;
+	pFilter->m_strMeshName = meshName;
 	newObj->AddComponent<CMeshRenderer>();
 
 	if (hSelected && m_mapGameObjects.count(hSelected))

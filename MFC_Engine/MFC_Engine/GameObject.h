@@ -10,16 +10,16 @@ public:
 
     static std::shared_ptr<CGameObject> Create(const std::wstring& name);
 
-    UINT GetID() const { return m_id; }
-    const std::wstring& GetName() const { return m_name; }
-    void SetName(const std::wstring& name) { m_name = name; }
+    UINT GetID() const { return m_nID; }
+    const std::wstring& GetName() const { return m_strName; }
+    void SetName(const std::wstring& name) { m_strName = name; }
 
     std::shared_ptr<CTransform> GetTransform() { return m_pTransform; }
 
     // Hierarchy management
     void AddChild(std::shared_ptr<CGameObject> child);
     void RemoveChild(std::shared_ptr<CGameObject> child);
-    const std::vector<std::shared_ptr<CGameObject>>& GetChildren() const { return m_children; }
+    const std::vector<std::shared_ptr<CGameObject>>& GetChildren() const { return m_vecChildren; }
     
     CGameObject* GetParent() { return m_pParent; }
 
@@ -27,7 +27,7 @@ public:
     template<typename T>
     std::shared_ptr<T> GetComponent()
     {
-        for (auto& component : m_components)
+        for (auto& component : m_vecComponents)
         {
             auto casted = std::dynamic_pointer_cast<T>(component);
             if (casted) return casted;
@@ -39,16 +39,16 @@ public:
     std::shared_ptr<T> AddComponent(Args&&... args)
     {
         auto component = std::make_shared<T>(this, std::forward<Args>(args)...);
-        m_components.push_back(component);
+        m_vecComponents.push_back(component);
         return component;
     }
 
 private:
-    static UINT s_nextId;
-    UINT m_id;
-    std::wstring m_name;
+    static UINT s_nNextID;
+    UINT m_nID;
+    std::wstring m_strName;
     CGameObject* m_pParent = nullptr;
     std::shared_ptr<CTransform> m_pTransform;
-    std::vector<std::shared_ptr<CComponent>> m_components;
-    std::vector<std::shared_ptr<CGameObject>> m_children;
+    std::vector<std::shared_ptr<CComponent>> m_vecComponents;
+    std::vector<std::shared_ptr<CGameObject>> m_vecChildren;
 };

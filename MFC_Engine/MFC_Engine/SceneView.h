@@ -19,6 +19,7 @@ protected:
 	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 
@@ -26,6 +27,9 @@ protected:
 
 public:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	CGraphicsEngine* GetEngine() { return m_pEngine.get(); }
+	void SetSelectedGameObject(std::shared_ptr<class CGameObject> pObj) { m_pSelectedObj = pObj; }
+	std::shared_ptr<class CGameObject> GetSelectedGameObject() const { return m_pSelectedObj; }
 
 private:
 	void RenderLoop();
@@ -36,8 +40,13 @@ private:
 	std::thread m_renderThread;
 	std::atomic<bool> m_bIsRunning;
 
-	// --- 입력 관련 ---
+	// --- 선택 및 기즈모 ---
+	std::shared_ptr<class CGameObject> m_pSelectedObj;
+	std::unique_ptr<class CGizmo> m_pGizmo;
+
 	bool m_bRButtonDown;
+	bool m_bLButtonDown;
+	int m_gizmoAxis; // 0: none, 1: X, 2: Y, 3: Z
 	CPoint m_lastMousePos;
 	bool m_keys[256];
 };

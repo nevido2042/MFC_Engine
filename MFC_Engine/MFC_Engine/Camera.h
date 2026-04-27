@@ -37,6 +37,10 @@ public:
     float GetPitch() const { return m_cameraPitch; }
     float GetYaw() const { return m_cameraYaw; }
 
+    DirectX::XMVECTOR GetForward() const;
+    DirectX::XMVECTOR GetRight() const;
+    DirectX::XMVECTOR GetUp() const;
+
 private:
     DirectX::XMFLOAT3 m_cameraPos; // 카메라 위치
     float m_cameraPitch;          // 상하 회전 값

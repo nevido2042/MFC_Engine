@@ -4,6 +4,7 @@
 
 class CScene;
 class CPickingRenderTarget;
+class CGizmo;
 #include <mutex>
 #include <map>
 #include <string>
@@ -24,12 +25,12 @@ public:
 
     // --- 핵심 인터페이스 ---
     bool Initialize(HWND hWnd, int width, int height);
-    void Render();
-    void Render(std::shared_ptr<CScene> pScene);
+    void Render(std::shared_ptr<class CScene> pScene, std::shared_ptr<class CGameObject> pSelectedObj, class CGizmo* pGizmo);
     void Resize(int width, int height);
     float GetFPS() const { return m_timeManager.GetFPS(); }
+    ID3D12Device* GetDevice() { return m_pDevice ? m_pDevice->GetDevice() : nullptr; }
     
-    UINT Pick(int x, int y);
+    UINT Pick(int x, int y, std::shared_ptr<class CGameObject> pSelectedObj, class CGizmo* pGizmo);
 
 
 private:
@@ -46,6 +47,7 @@ private:
     void CreateConstantBuffer();    // 상수 버퍼 생성
 
     void RenderGameObject(std::shared_ptr<class CGameObject> pObj, int& objIndex);
+    void RenderGizmo(class CGizmo* pGizmo, std::shared_ptr<class CGameObject> pSelectedObj);
     void WaitForPreviousFrame();
 
 private:
@@ -54,14 +56,15 @@ private:
 
     // --- 렌더링 파이프라인 구축 ---
     ComPtr<ID3D12RootSignature> m_rootSignature; // 루트 시그니처
-    ComPtr<ID3D12PipelineState> m_pipelineState; // 파이프라인 상태 객체(PSO)
+    ComPtr<ID3D12PipelineState> m_pipelineState; // 기본 파이프라인 상태 객체(PSO)
+    ComPtr<ID3D12PipelineState> m_pipelineStateGizmo; // 기즈모용 PSO (깊이 테스트 무시)
     
     std::unique_ptr<CConstantBuffer> m_pConstantBuffer; // 상수 버퍼 매니저
 
     // --- 동기화 및 상태 변수 ---
-    bool m_isInitialized;
-    int m_width;
-    int m_height;
+    bool m_bIsInitialized;
+    int m_nWidth;
+    int m_nHeight;
 
     // --- 매니저 객체 분리 ---
     CTimeManager m_timeManager;

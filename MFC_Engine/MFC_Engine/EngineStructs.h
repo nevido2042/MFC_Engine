@@ -19,5 +19,6 @@ struct SceneConstantBuffer
 {
     DirectX::XMFLOAT4X4 matWVP;
     DirectX::XMFLOAT4 objectColorID;
-    float padding[44]; // 256바이트 패딩
+    DirectX::XMFLOAT4 meshColor; // 렌더링 시 사용할 색상 (기즈모 등)
+    float padding[40]; // 256바이트 패딩
 };

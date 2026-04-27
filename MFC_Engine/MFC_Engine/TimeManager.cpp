@@ -2,14 +2,14 @@
 #include "TimeManager.h"
 
 CTimeManager::CTimeManager()
-    : m_deltaTime(0.0)
-    , m_totalTime(0.0)
-    , m_fps(0.0f)
-    , m_frameCount(0)
-    , m_fpsTimer(0.0)
+    : m_fDeltaTime(0.0)
+    , m_fTotalTime(0.0)
+    , m_fFPS(0.0f)
+    , m_nFrameCount(0)
+    , m_fFPSTimer(0.0)
 {
-    m_timerFrequency.QuadPart = 0;
-    m_lastTimestamp.QuadPart = 0;
+    m_nTimerFrequency.QuadPart = 0;
+    m_nLastTimestamp.QuadPart = 0;
 }
 
 CTimeManager::~CTimeManager()
@@ -18,8 +18,8 @@ CTimeManager::~CTimeManager()
 
 void CTimeManager::Initialize()
 {
-    QueryPerformanceFrequency(&m_timerFrequency);
-    QueryPerformanceCounter(&m_lastTimestamp);
+    QueryPerformanceFrequency(&m_nTimerFrequency);
+    QueryPerformanceCounter(&m_nLastTimestamp);
 }
 
 void CTimeManager::Update()
@@ -28,18 +28,18 @@ void CTimeManager::Update()
     QueryPerformanceCounter(&currentTimestamp);
 
     // DeltaTime 계산 (초 단위)
-    m_deltaTime = (double)(currentTimestamp.QuadPart - m_lastTimestamp.QuadPart) / m_timerFrequency.QuadPart;
-    m_lastTimestamp = currentTimestamp;
+    m_fDeltaTime = (double)(currentTimestamp.QuadPart - m_nLastTimestamp.QuadPart) / m_nTimerFrequency.QuadPart;
+    m_nLastTimestamp = currentTimestamp;
 
     // 누적 시간 및 FPS 계산
-    m_totalTime += m_deltaTime;
-    m_fpsTimer += m_deltaTime;
-    m_frameCount++;
+    m_fTotalTime += m_fDeltaTime;
+    m_fFPSTimer += m_fDeltaTime;
+    m_nFrameCount++;
 
-    if (m_fpsTimer >= 1.0)
+    if (m_fFPSTimer >= 1.0)
     {
-        m_fps = (float)m_frameCount / (float)m_fpsTimer;
-        m_frameCount = 0;
-        m_fpsTimer = 0.0;
+        m_fFPS = (float)m_nFrameCount / (float)m_fFPSTimer;
+        m_nFrameCount = 0;
+        m_fFPSTimer = 0.0;
     }
 }

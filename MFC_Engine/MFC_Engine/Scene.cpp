@@ -9,7 +9,7 @@ CScene::CScene()
 {
     // 테스트용 초기 오브젝트 생성
     auto mainCamera = CGameObject::Create(L"Main Camera");
-    mainCamera->GetTransform()->m_position = { 0, 0, -10 };
+    mainCamera->GetTransform()->m_vPosition = { 0, 0, -10 };
     AddGameObject(mainCamera);
 }
 
@@ -22,10 +22,10 @@ void CScene::RemoveGameObject(std::shared_ptr<CGameObject> obj)
     if (!obj) return;
 
     // 최상위 목록에서 제거 시도
-    auto it = std::find(m_gameObjects.begin(), m_gameObjects.end(), obj);
-    if (it != m_gameObjects.end())
+    auto it = std::find(m_vecGameObjects.begin(), m_vecGameObjects.end(), obj);
+    if (it != m_vecGameObjects.end())
     {
-        m_gameObjects.erase(it);
+        m_vecGameObjects.erase(it);
         return;
     }
 
@@ -50,5 +50,5 @@ std::shared_ptr<CGameObject> CScene::FindGameObjectByID(UINT id)
         }
         return nullptr;
     };
-    return search(m_gameObjects);
+    return search(m_vecGameObjects);
 }

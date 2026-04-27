@@ -61,3 +61,21 @@ DirectX::XMMATRIX CCamera::GetViewMatrix() const
     // LookAt 행렬 생성 (Left-Handed)
     return DirectX::XMMatrixLookToLH(camPos, camForward, camUp);
 }
+
+DirectX::XMVECTOR CCamera::GetForward() const
+{
+    DirectX::XMMATRIX matCamRot = DirectX::XMMatrixRotationRollPitchYaw(m_cameraPitch, m_cameraYaw, 0.0f);
+    return DirectX::XMVector3TransformNormal(DirectX::XMVectorSet(0, 0, 1, 0), matCamRot);
+}
+
+DirectX::XMVECTOR CCamera::GetRight() const
+{
+    DirectX::XMMATRIX matCamRot = DirectX::XMMatrixRotationRollPitchYaw(m_cameraPitch, m_cameraYaw, 0.0f);
+    return DirectX::XMVector3TransformNormal(DirectX::XMVectorSet(1, 0, 0, 0), matCamRot);
+}
+
+DirectX::XMVECTOR CCamera::GetUp() const
+{
+    DirectX::XMMATRIX matCamRot = DirectX::XMMatrixRotationRollPitchYaw(m_cameraPitch, m_cameraYaw, 0.0f);
+    return DirectX::XMVector3TransformNormal(DirectX::XMVectorSet(0, 1, 0, 0), matCamRot);
+}

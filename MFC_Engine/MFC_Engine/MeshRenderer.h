@@ -12,5 +12,5 @@ public:
     virtual ~CMeshRenderer() {}
 
     // 렌더링 활성화 여부
-    bool m_isEnabled = true;
+    bool m_bIsEnabled = true;
 };
