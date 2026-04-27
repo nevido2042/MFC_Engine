@@ -76,19 +76,19 @@ void CPickingSystem::Initialize(ComPtr<ID3D12Device> device, ComPtr<ID3D12RootSi
     ThrowIfFailed(device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pickingPSO)));
 
     // CPicking 초기화
-    m_pPicking = std::make_unique<CPicking>();
-    m_pPicking->Initialize(device.Get(), width, height);
+    m_pPickingRenderTarget = std::make_unique<CPickingRenderTarget>();
+    m_pPickingRenderTarget->Initialize(device.Get(), width, height);
 }
 
 void CPickingSystem::Resize(ComPtr<ID3D12Device> device, int width, int height)
 {
-    if (m_pPicking)
-        m_pPicking->Resize(device.Get(), width, height);
+    if (m_pPickingRenderTarget)
+        m_pPickingRenderTarget->Resize(device.Get(), width, height);
 }
 
 UINT CPickingSystem::Pick(int x, int y, ID3D12Device* device, ID3D12CommandQueue* queue, ID3D12CommandAllocator* allocator, ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* rootSignature, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin, int width, int height)
 {
-    if (!m_pPicking) return 0;
+    if (!m_pPickingRenderTarget) return 0;
 
     // 명령 리스트 리셋
     ThrowIfFailed(allocator->Reset());
@@ -99,7 +99,7 @@ UINT CPickingSystem::Pick(int x, int y, ID3D12Device* device, ID3D12CommandQueue
     RenderPickingPass(CSceneManager::GetInstance().GetActiveScene(), commandList, width, height, constantBuffer, cbvDataBegin);
     
     // 픽셀 읽기
-    m_pPicking->ReadPixelAsync(commandList, x, y);
+    m_pPickingRenderTarget->ReadPixelAsync(commandList, x, y);
 
     ThrowIfFailed(commandList->Close());
 
@@ -110,7 +110,7 @@ UINT CPickingSystem::Pick(int x, int y, ID3D12Device* device, ID3D12CommandQueue
     // 여기서는 일단 직접 대기하도록 설계 (Pick은 대개 동기적으로 결과를 원함)
     // (원래 CGraphicsEngine::Pick에서도 WaitForPreviousFrame을 호출했음)
     
-    return m_pPicking->GetPickedID();
+    return m_pPickingRenderTarget->GetPickedID();
 }
 
 void CPickingSystem::RenderPickingPass(std::shared_ptr<CScene> pScene, ID3D12GraphicsCommandList* commandList, int width, int height, ID3D12Resource* constantBuffer, UINT8* cbvDataBegin)
@@ -121,8 +121,8 @@ void CPickingSystem::RenderPickingPass(std::shared_ptr<CScene> pScene, ID3D12Gra
     commandList->RSSetViewports(1, &viewport);
     commandList->RSSetScissorRects(1, &scissorRect);
 
-    auto rtv = m_pPicking->GetRTV();
-    auto dsv = m_pPicking->GetDSV();
+    auto rtv = m_pPickingRenderTarget->GetRTV();
+    auto dsv = m_pPickingRenderTarget->GetDSV();
 
     commandList->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
     

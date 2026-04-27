@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Picking.h"
+#include "PickingRenderTarget.h"
 #include "d3dx12.h"
 
 #ifndef ThrowIfFailed
@@ -10,10 +10,10 @@
 }
 #endif
 
-CPicking::CPicking() : m_width(0), m_height(0) {}
-CPicking::~CPicking() {}
+CPickingRenderTarget::CPickingRenderTarget() : m_width(0), m_height(0) {}
+CPickingRenderTarget::~CPickingRenderTarget() {}
 
-void CPicking::Initialize(ID3D12Device* device, int width, int height)
+void CPickingRenderTarget::Initialize(ID3D12Device* device, int width, int height)
 {
     D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
     rtvHeapDesc.NumDescriptors = 1;
@@ -59,7 +59,7 @@ void CPicking::Initialize(ID3D12Device* device, int width, int height)
     Resize(device, width, height);
 }
 
-void CPicking::Resize(ID3D12Device* device, int width, int height)
+void CPickingRenderTarget::Resize(ID3D12Device* device, int width, int height)
 {
     if (width <= 0 || height <= 0) return;
     m_width = width;
@@ -135,7 +135,7 @@ void CPicking::Resize(ID3D12Device* device, int width, int height)
     device->CreateDepthStencilView(m_pickingDSV.Get(), nullptr, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
-void CPicking::ReadPixelAsync(ID3D12GraphicsCommandList* commandList, int x, int y)
+void CPickingRenderTarget::ReadPixelAsync(ID3D12GraphicsCommandList* commandList, int x, int y)
 {
     if (x < 0 || y < 0 || x >= m_width || y >= m_height) return;
 
@@ -176,7 +176,7 @@ void CPicking::ReadPixelAsync(ID3D12GraphicsCommandList* commandList, int x, int
         D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
 }
 
-UINT CPicking::GetPickedID()
+UINT CPickingRenderTarget::GetPickedID()
 {
     UINT8* mappedData = nullptr;
     D3D12_RANGE readRange = { 0, 4 };
@@ -196,12 +196,12 @@ UINT CPicking::GetPickedID()
     return 0;
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE CPicking::GetRTV() const
+D3D12_CPU_DESCRIPTOR_HANDLE CPickingRenderTarget::GetRTV() const
 {
     return m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE CPicking::GetDSV() const
+D3D12_CPU_DESCRIPTOR_HANDLE CPickingRenderTarget::GetDSV() const
 {
     return m_dsvHeap->GetCPUDescriptorHandleForHeapStart();
 }

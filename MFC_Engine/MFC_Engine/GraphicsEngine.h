@@ -40,13 +40,11 @@ private:
     void CreateSwapChain(HWND hWnd, int width, int height);
     void CreateDescriptorHeaps();
     void CreateRenderTargets();
-    void CreateCommandAllocator();
     
     // --- 렌더링 파이프라인 구축 관련 함수 ---
     void CreateRootSignature();     // 쉐이더 자원 바인딩 레이아웃 생성
     void CreatePipelineState();     // 그래픽 파이프라인 상태(PSO) 생성
     void CreateConstantBuffer();    // 상수 버퍼 생성
-    void CreateDepthStencilBuffer(); // 깊이 버퍼 생성
 
     void RenderGameObject(std::shared_ptr<class CGameObject> pObj, int& objIndex);
     void WaitForPreviousFrame();

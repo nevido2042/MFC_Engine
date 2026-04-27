@@ -3,7 +3,7 @@
 #include <wrl/client.h>
 #include <memory>
 #include <vector>
-#include "Picking.h"
+#include "PickingRenderTarget.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -27,5 +27,5 @@ private:
 
 private:
     ComPtr<ID3D12PipelineState> m_pickingPSO;
-    std::unique_ptr<CPicking> m_pPicking;
+    std::unique_ptr<CPickingRenderTarget> m_pPickingRenderTarget;
 };

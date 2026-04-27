@@ -5,11 +5,11 @@
 
 using Microsoft::WRL::ComPtr;
 
-class CPicking
+class CPickingRenderTarget
 {
 public:
-    CPicking();
-    ~CPicking();
+    CPickingRenderTarget();
+    ~CPickingRenderTarget();
 
     void Initialize(ID3D12Device* device, int width, int height);
     void Resize(ID3D12Device* device, int width, int height);
