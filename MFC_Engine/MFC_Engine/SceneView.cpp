@@ -131,9 +131,10 @@ void CSceneView::OnLButtonDown(UINT nFlags, CPoint point)
         // 기즈모 렌더링 로직을 람다로 전달하여 결합도 해제
         UINT pickedID = CPickingSystem::GetInstance().Pick(point.x, point.y, m_pEngine.get(), 
             [&](ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* pCB, UINT8* pData) {
-                if (m_pGizmo && m_pSelectedObj)
+                auto pSelected = GetSelectedGameObject();
+                if (m_pGizmo && pSelected)
                 {
-                    m_pGizmo->RenderForPicking(pCmdList, m_pSelectedObj.get(), 
+                    m_pGizmo->RenderForPicking(pCmdList, pSelected.get(), 
                         m_pEngine->GetWidth(), m_pEngine->GetHeight(), pCB, pData);
                 }
             });
@@ -159,8 +160,8 @@ void CSceneView::OnLButtonDown(UINT nFlags, CPoint point)
                 auto pScene = CSceneManager::GetInstance().GetActiveScene();
                 if (pScene)
                 {
-                    m_pSelectedObj = pScene->FindGameObjectByID(pickedID);
-                    pMainFrame->GetHierarchyView()->SelectGameObject(m_pSelectedObj);
+                    SetSelectedGameObject(pScene->FindGameObjectByID(pickedID));
+                    pMainFrame->GetHierarchyView()->SelectGameObject(GetSelectedGameObject());
                 }
             }
         }
@@ -180,7 +181,7 @@ void CSceneView::OnLButtonUp(UINT nFlags, CPoint point)
     m_gizmoAxis = 0;
     ReleaseCapture();
 
-    if (!bWasGizmoDragging && !m_pSelectedObj)
+    if (!bWasGizmoDragging && !GetSelectedGameObject())
     {
         CWnd::OnLButtonUp(nFlags, point);
     }
@@ -188,6 +189,7 @@ void CSceneView::OnLButtonUp(UINT nFlags, CPoint point)
 
 void CSceneView::OnMouseMove(UINT nFlags, CPoint point)
 {
+    auto pSelected = GetSelectedGameObject();
     if (m_bRButtonDown && m_pEngine)
     {
         float dx = static_cast<float>(point.x - m_lastMousePos.x);
@@ -198,12 +200,12 @@ void CSceneView::OnMouseMove(UINT nFlags, CPoint point)
             CSceneManager::GetInstance().GetEditorCamera().Rotate(dy, dx);
         }
     }
-    else if (m_bLButtonDown && m_gizmoAxis > 0 && m_pSelectedObj)
+    else if (m_bLButtonDown && m_gizmoAxis > 0 && pSelected)
     {
         float dx = static_cast<float>(point.x - m_lastMousePos.x);
         float dy = static_cast<float>(point.y - m_lastMousePos.y);
 
-        auto pTransform = m_pSelectedObj->GetTransform();
+        auto pTransform = pSelected->GetTransform();
         DirectX::XMFLOAT3 vPos = pTransform->m_vPosition;
         float fMoveScale = 0.02f;
 
@@ -241,7 +243,7 @@ void CSceneView::OnMouseMove(UINT nFlags, CPoint point)
         CMainFrame* pMainFrame = (CMainFrame*)AfxGetMainWnd();
         if (pMainFrame && pMainFrame->GetInspectorView())
         {
-            pMainFrame->GetInspectorView()->SetSelectedGameObject(m_pSelectedObj);
+            pMainFrame->GetInspectorView()->SetSelectedGameObject(pSelected);
         }
     }
     else if (m_bLButtonDown && m_gizmoAxis == 0)
@@ -283,7 +285,7 @@ void CSceneView::RenderLoop()
         if (m_pEngine)
         {
             ProcessInput(deltaTime);
-            m_pEngine->Render(CSceneManager::GetInstance().GetActiveScene(), m_pSelectedObj, m_pGizmo.get());
+            m_pEngine->Render(CSceneManager::GetInstance().GetActiveScene(), GetSelectedGameObject(), m_pGizmo.get());
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1));

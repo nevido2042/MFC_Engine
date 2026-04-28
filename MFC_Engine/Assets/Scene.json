@@ -1,0 +1,119 @@
+{
+    "EditorCamera": {
+        "Pitch": 0.5949996113777161,
+        "Position": [
+            1.0641788244247437,
+            2.6037590503692627,
+            -4.022364616394043
+        ],
+        "Yaw": -0.14500008523464203
+    },
+    "GameObjects": [
+        {
+            "Children": [],
+            "Components": [
+                {
+                    "Data": {
+                        "Position": [
+                            0.0,
+                            0.0,
+                            -10.0
+                        ],
+                        "Rotation": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "Scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "Type": "CTransform"
+                }
+            ],
+            "ID": 1,
+            "Name": "Main Camera"
+        },
+        {
+            "Children": [],
+            "Components": [
+                {
+                    "Data": {
+                        "Position": [
+                            0.0,
+                            0.0,
+                            1.715362787246704
+                        ],
+                        "Rotation": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "Scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "Type": "CTransform"
+                },
+                {
+                    "Data": {
+                        "MeshName": "Cube"
+                    },
+                    "Type": "CMeshFilter"
+                },
+                {
+                    "Data": {
+                        "IsEnabled": true
+                    },
+                    "Type": "CMeshRenderer"
+                }
+            ],
+            "ID": 2,
+            "Name": "Cube"
+        },
+        {
+            "Children": [],
+            "Components": [
+                {
+                    "Data": {
+                        "Position": [
+                            0.0,
+                            0.0,
+                            -1.4450196027755737
+                        ],
+                        "Rotation": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "Scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "Type": "CTransform"
+                },
+                {
+                    "Data": {
+                        "MeshName": "Quad"
+                    },
+                    "Type": "CMeshFilter"
+                },
+                {
+                    "Data": {
+                        "IsEnabled": true
+                    },
+                    "Type": "CMeshRenderer"
+                }
+            ],
+            "ID": 11,
+            "Name": "Quad"
+        }
+    ],
+    "SceneName": "SampleScene"
+}

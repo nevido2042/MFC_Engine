@@ -4,6 +4,7 @@
 #include "ProjectView.h"
 #include "Resource.h"
 #include "MFC_Engine.h"
+#include "SceneManager.h"
 
 CProjectView::CProjectView() noexcept
 {
@@ -19,6 +20,7 @@ BEGIN_MESSAGE_MAP(CProjectView, CDockablePane)
 	ON_WM_CONTEXTMENU()
 	ON_WM_PAINT()
 	ON_WM_SETFOCUS()
+	ON_NOTIFY(NM_DBLCLK, 4, &CProjectView::OnTreeDoubleClick)
 END_MESSAGE_MAP()
 
 int CProjectView::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -64,7 +66,57 @@ void CProjectView::OnSize(UINT nType, int cx, int cy)
 
 void CProjectView::FillProjectView()
 {
-	// 에셋/파일 시스템 연결 예정
+	m_wndProjectView.DeleteAllItems();
+
+	CString strAssetsPath = _T("Assets");
+	CFileFind finder;
+	BOOL bWorking = finder.FindFile(strAssetsPath);
+	if (!bWorking)
+	{
+		strAssetsPath = _T("..\\Assets");
+		bWorking = finder.FindFile(strAssetsPath);
+	}
+
+	if (bWorking)
+	{
+		m_strAssetsRoot = strAssetsPath;
+		HTREEITEM hRoot = m_wndProjectView.InsertItem(_T("Assets"), 0, 0);
+		PopulateDirectoryTree(strAssetsPath, hRoot);
+		m_wndProjectView.Expand(hRoot, TVE_EXPAND);
+	}
+	else
+	{
+		m_wndProjectView.InsertItem(_T("Assets (Not Found)"), 0, 0);
+	}
+}
+
+void CProjectView::PopulateDirectoryTree(const CString& strDirPath, HTREEITEM hParent)
+{
+	CFileFind finder;
+	CString strSearchPath = strDirPath + _T("\\*.*");
+	BOOL bWorking = finder.FindFile(strSearchPath);
+
+	while (bWorking)
+	{
+		bWorking = finder.FindNextFile();
+
+		if (finder.IsDots())
+			continue;
+
+		CString strFileName = finder.GetFileName();
+
+		if (finder.IsDirectory())
+		{
+			HTREEITEM hFolder = m_wndProjectView.InsertItem(strFileName, 0, 0, hParent);
+			PopulateDirectoryTree(finder.GetFilePath(), hFolder);
+			// m_wndProjectView.Expand(hFolder, TVE_EXPAND); // 폴더는 기본으로 닫아두기
+		}
+		else
+		{
+			// 파일의 경우 1번 아이콘 (파일 아이콘) 사용
+			m_wndProjectView.InsertItem(strFileName, 1, 1, hParent);
+		}
+	}
 }
 
 void CProjectView::OnContextMenu(CWnd* pWnd, CPoint point)
@@ -133,5 +185,45 @@ void CProjectView::OnChangeVisualStyle()
 		m_ProjectViewImages.Create(16, bmpObj.bmHeight, nFlags, 0, 0);
 		m_ProjectViewImages.Add(&bmp, RGB(255, 0, 255));
 		m_wndProjectView.SetImageList(&m_ProjectViewImages, TVSIL_NORMAL);
+	}
+}
+
+void CProjectView::OnTreeDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	*pResult = 0;
+
+	HTREEITEM hItem = m_wndProjectView.GetSelectedItem();
+	if (hItem == nullptr)
+		return;
+
+	// 파일인지 확인 (아이콘이 1이면 파일로 간주)
+	int nImage, nSelectedImage;
+	m_wndProjectView.GetItemImage(hItem, nImage, nSelectedImage);
+	if (nImage != 1) return;
+
+	CString strFilename = m_wndProjectView.GetItemText(hItem);
+
+	// 확장자가 .json인지 확인
+	if (strFilename.Right(5).CompareNoCase(_T(".json")) != 0)
+		return;
+
+	// 루트까지 올라가면서 상대 경로 구성
+	CString strRelativePath = strFilename;
+	HTREEITEM hParent = m_wndProjectView.GetParentItem(hItem);
+	while (hParent != nullptr && hParent != m_wndProjectView.GetRootItem())
+	{
+		strRelativePath = m_wndProjectView.GetItemText(hParent) + _T("\\") + strRelativePath;
+		hParent = m_wndProjectView.GetParentItem(hParent);
+	}
+
+	CString strFullPath = m_strAssetsRoot + _T("\\") + strRelativePath;
+
+	if (CSceneManager::GetInstance().LoadScene(strFullPath.GetString()))
+	{
+		CMainFrame* pMainFrame = (CMainFrame*)AfxGetMainWnd();
+		if (pMainFrame)
+		{
+			pMainFrame->OnSceneLoaded();
+		}
 	}
 }

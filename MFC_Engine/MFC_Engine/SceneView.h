@@ -28,10 +28,19 @@ protected:
 public:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	CGraphicsEngine* GetEngine() { return m_pEngine.get(); }
-	void SetSelectedGameObject(std::shared_ptr<class CGameObject> pObj) { m_pSelectedObj = pObj; }
-	std::shared_ptr<class CGameObject> GetSelectedGameObject() const { return m_pSelectedObj; }
+	void SetSelectedGameObject(std::shared_ptr<class CGameObject> pObj) 
+	{ 
+		std::lock_guard<std::mutex> lock(m_selectionMutex);
+		m_pSelectedObj = pObj; 
+	}
+	std::shared_ptr<class CGameObject> GetSelectedGameObject() const 
+	{ 
+		std::lock_guard<std::mutex> lock(m_selectionMutex);
+		return m_pSelectedObj; 
+	}
 
 private:
+	mutable std::mutex m_selectionMutex;
 	void RenderLoop();
 	void ProcessInput(float deltaTime);
 

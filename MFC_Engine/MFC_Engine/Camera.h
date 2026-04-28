@@ -32,10 +32,14 @@ public:
      */
     DirectX::XMMATRIX GetViewMatrix() const;
 
-    // Getter
+    // Getter & Setter
     DirectX::XMFLOAT3 GetPosition() const { return m_cameraPos; }
     float GetPitch() const { return m_cameraPitch; }
     float GetYaw() const { return m_cameraYaw; }
+    
+    void SetPosition(const DirectX::XMFLOAT3& pos) { m_cameraPos = pos; }
+    void SetPitch(float pitch) { m_cameraPitch = pitch; }
+    void SetYaw(float yaw) { m_cameraYaw = yaw; }
 
     DirectX::XMVECTOR GetForward() const;
     DirectX::XMVECTOR GetRight() const;

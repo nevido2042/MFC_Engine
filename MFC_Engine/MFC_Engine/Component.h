@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "json.hpp"
 
 class CGameObject;
 
@@ -11,6 +12,11 @@ public:
 
     virtual void Update() {}
     
+    // 직렬화 인터페이스
+    virtual std::string GetComponentName() const = 0;
+    virtual void Serialize(nlohmann::json& j) const {}
+    virtual void Deserialize(const nlohmann::json& j) {}
+
     CGameObject* GetOwner() { return m_pOwner; }
 
 protected:

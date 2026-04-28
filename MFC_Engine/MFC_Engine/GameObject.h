@@ -23,6 +23,9 @@ public:
     
     CGameObject* GetParent() { return m_pParent; }
 
+    void Serialize(nlohmann::json& j) const;
+    void Deserialize(const nlohmann::json& j);
+
     // Component management
     template<typename T>
     std::shared_ptr<T> GetComponent()

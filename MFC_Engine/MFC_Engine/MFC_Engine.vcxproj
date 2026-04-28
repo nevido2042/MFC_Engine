@@ -211,6 +211,8 @@
     <ClInclude Include="Component.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="Scene.h" />
+    <ClInclude Include="SceneSerializer.h" />
+    <ClInclude Include="json.hpp" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="MeshFilter.h" />
     <ClInclude Include="MeshRenderer.h" />
@@ -243,6 +245,8 @@
     <ClCompile Include="GraphicsEngine.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="SceneManager.cpp" />
+    <ClCompile Include="SceneSerializer.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="PrimitiveGenerator.cpp" />
     <ClCompile Include="Mesh.cpp" />

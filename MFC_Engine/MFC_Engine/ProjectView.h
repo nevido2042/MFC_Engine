@@ -20,13 +20,16 @@ public:
 
 	void AdjustLayout();
 	void OnChangeVisualStyle();
+	void FillProjectView();
 
 protected:
 	CViewTree m_wndProjectView;
 	CImageList m_ProjectViewImages;
 	CProjectViewToolBar m_wndToolBar;
 
-	void FillProjectView();
+	void PopulateDirectoryTree(const CString& strDirPath, HTREEITEM hParent);
+
+	CString m_strAssetsRoot;
 
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
@@ -34,6 +37,7 @@ protected:
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 	afx_msg void OnPaint();
 	afx_msg void OnSetFocus(CWnd* pOldWnd);
+	afx_msg void OnTreeDoubleClick(NMHDR* pNMHDR, LRESULT* pResult);
 
 	DECLARE_MESSAGE_MAP()
 };

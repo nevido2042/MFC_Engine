@@ -25,6 +25,7 @@ public:
 	void OnChangeVisualStyle();
 
 	void SelectGameObject(std::shared_ptr<CGameObject> pObj);
+	void FillHierarchyView();
 
 protected:
 	CHierarchyToolBar m_wndToolBar;
@@ -32,7 +33,6 @@ protected:
 	CImageList m_HierarchyViewImages;
 	UINT m_nCurrSort;
 
-	void FillHierarchyView();
 	void InsertGameObject(HTREEITEM hParent, std::shared_ptr<CGameObject> pObj);
 	
 	afx_msg void OnSelChanged(NMHDR* pNMHDR, LRESULT* pResult);

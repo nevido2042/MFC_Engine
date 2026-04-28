@@ -7,6 +7,7 @@
 #include "MFC_Engine.h"
 
 #include "MainFrm.h"
+#include "SceneManager.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -28,6 +29,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWndEx)
 	ON_COMMAND_RANGE(ID_VIEW_APPLOOK_WIN_2000, ID_VIEW_APPLOOK_WINDOWS_7, &CMainFrame::OnApplicationLook)
 	ON_UPDATE_COMMAND_UI_RANGE(ID_VIEW_APPLOOK_WIN_2000, ID_VIEW_APPLOOK_WINDOWS_7, &CMainFrame::OnUpdateApplicationLook)
 	ON_WM_SETTINGCHANGE()
+	ON_COMMAND(ID_FILE_SAVE, &CMainFrame::OnFileSave)
+	ON_COMMAND(ID_FILE_OPEN, &CMainFrame::OnFileOpen)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -439,4 +442,38 @@ void CMainFrame::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
 {
 	CMDIFrameWndEx::OnSettingChange(uFlags, lpszSection);
 	m_wndConsoleView.UpdateFonts();
+}
+
+void CMainFrame::OnFileSave()
+{
+	CFileDialog dlg(FALSE, _T("json"), _T("Scene.json"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, _T("JSON Files (*.json)|*.json|All Files (*.*)|*.*||"), this);
+	if (dlg.DoModal() == IDOK)
+	{
+		CSceneManager::GetInstance().SaveScene(dlg.GetPathName().GetString());
+		m_wndProjectView.FillProjectView();
+	}
+}
+
+void CMainFrame::OnSceneLoaded()
+{
+	// 씬 로드 성공 시 각종 뷰들의 상태를 일괄 갱신/초기화합니다.
+	m_wndHierarchyView.FillHierarchyView();
+	m_wndInspectorView.SetSelectedGameObject(nullptr);
+	
+	if (m_wndSceneView.GetSafeHwnd()) 
+	{
+		m_wndSceneView.SetSelectedGameObject(nullptr);
+	}
+}
+
+void CMainFrame::OnFileOpen()
+{
+	CFileDialog dlg(TRUE, _T("json"), nullptr, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST, _T("JSON Files (*.json)|*.json|All Files (*.*)|*.*||"), this);
+	if (dlg.DoModal() == IDOK)
+	{
+		if (CSceneManager::GetInstance().LoadScene(dlg.GetPathName().GetString()))
+		{
+			OnSceneLoaded();
+		}
+	}
 }

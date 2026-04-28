@@ -20,9 +20,12 @@ public:
 	CInspectorView* GetInspectorView() { return &m_wndInspectorView; }
 	CHierarchyView* GetHierarchyView() { return &m_wndHierarchyView; }
 	CSceneView* GetSceneView() { return &m_wndSceneView; }
+	CProjectView* GetProjectView() { return &m_wndProjectView; }
+
 
 // 작업입니다.
 public:
+	void OnSceneLoaded();
 
 // 재정의입니다.
 public:
@@ -58,6 +61,8 @@ protected:
 	afx_msg void OnApplicationLook(UINT id);
 	afx_msg void OnUpdateApplicationLook(CCmdUI* pCmdUI);
 	afx_msg void OnSettingChange(UINT uFlags, LPCTSTR lpszSection);
+	afx_msg void OnFileSave();
+	afx_msg void OnFileOpen();
 	DECLARE_MESSAGE_MAP()
 
 	BOOL CreateDockingWindows();
