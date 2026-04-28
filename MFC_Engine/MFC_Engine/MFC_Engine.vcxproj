@@ -273,6 +273,7 @@
     <ClCompile Include="LightingPass.cpp" />
     <ClCompile Include="DebugPass.cpp" />
     <ClCompile Include="GizmoPass.cpp" />
+    <ClCompile Include="MeshRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MFCEngine.rc" />

@@ -25,7 +25,8 @@ public:
                         ID3D12Resource *pConstantBuffer, UINT8 *pCbvDataBegin);
 
 private:
-  struct AxisInfo {
+  struct AxisInfo 
+  {
     DirectX::XMFLOAT3 vScale;
     DirectX::XMFLOAT3 vOffset;
     DirectX::XMFLOAT4 vColor;

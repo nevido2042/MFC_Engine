@@ -1,19 +1,12 @@
 #pragma once
 #include "Component.h"
 #include <string>
-
-/**
- * @class CMeshFilter
- * @brief 게임 오브젝트가 사용할 메쉬 데이터를 지정하는 컴포넌트입니다.
- */
-#pragma once
-#include "Component.h"
-#include <string>
 #include "StringUtil.h"
 
 /**
  * @class CMeshFilter
  * @brief 게임 오브젝트가 사용할 메쉬 데이터를 지정하는 컴포넌트입니다.
+ *        메쉬 렌더러는 이 컴포넌트의 m_strMeshName을 참조하여 실제 렌더링을 수행합니다.
  */
 class CMeshFilter : public CComponent
 {

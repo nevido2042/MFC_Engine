@@ -13,18 +13,11 @@ public:
 
     virtual std::string GetComponentName() const override { return "CMeshRenderer"; }
 
-    virtual void Serialize(nlohmann::json& j) const override
-    {
-        j["IsEnabled"] = m_bIsEnabled;
-    }
+    virtual void Serialize(nlohmann::json& j) const override;
+    virtual void Deserialize(const nlohmann::json& j) override;
 
-    virtual void Deserialize(const nlohmann::json& j) override
-    {
-        if (j.contains("IsEnabled"))
-        {
-            m_bIsEnabled = j["IsEnabled"];
-        }
-    }
+    // 렌더링 함수 추가
+    void Render(struct ID3D12GraphicsCommandList* pCommandList, int& objIndex, class CConstantBuffer* pCB, int nWidth, int nHeight);
 
     // 렌더링 활성화 여부
     bool m_bIsEnabled = true;

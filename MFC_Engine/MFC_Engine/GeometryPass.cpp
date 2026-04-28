@@ -108,26 +108,14 @@ void CGeometryPass::Execute(const RenderContext& context)
     context.pCommandList->RSSetViewports(1, &context.pMainSwapChain->GetViewport());
     context.pCommandList->RSSetScissorRects(1, &context.pMainSwapChain->GetScissorRect());
 
-    std::shared_ptr<CLight> pMainLight = nullptr;
-
     if (context.pScene)
     {
         const auto& gameObjects = context.pScene->GetGameObjects();
         
-        for (auto& pObj : gameObjects)
-        {
-            auto pLight = pObj->GetComponent<CLight>();
-            if (pLight)
-            {
-                pMainLight = pLight;
-                break;
-            }
-        }
-
         int objIndex = 0;
         for (auto& pObj : gameObjects)
         {
-            pObj->Render(context.pCommandList, objIndex, pMainLight.get(), context.pCB, context.nWidth, context.nHeight);
+            pObj->Render(context.pCommandList, objIndex, context.pCB, context.nWidth, context.nHeight);
         }
     }
     else
