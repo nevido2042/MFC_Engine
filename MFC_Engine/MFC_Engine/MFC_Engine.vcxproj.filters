@@ -1,239 +1,318 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="?ŒìŠ¤ ?Œì¼">
+    <Filter Include="Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="?¤ë” ?Œì¼">
+    <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="ë¦¬ì†Œ???Œì¼">
+    <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{e88849c4-c089-4e7a-977d-7848d76d4986}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MFC_Engine.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="framework.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MainFrm.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
-    </ClInclude>
-    <ClInclude Include="SceneManager.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
-    </ClInclude>
-    <ClInclude Include="ProjectView.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
-    </ClInclude>
-    <ClInclude Include="HierarchyView.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
-    </ClInclude>
-    <ClInclude Include="ViewTree.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
-    </ClInclude>
-    <ClInclude Include="ConsoleView.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
-    </ClInclude>
-    <ClInclude Include="InspectorView.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
-    </ClInclude>
-    <ClInclude Include="SceneView.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
-    </ClInclude>
-    <ClInclude Include="GameView.h">
-      <Filter>View</Filter>
-    </ClInclude>
-    <ClInclude Include="GBufferView.h">
-      <Filter>View</Filter>
-    </ClInclude>
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GraphicsEngine.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Device.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SwapChain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstantBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineStructs.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GameObject.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Component.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Transform.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Scene.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneManager.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SceneSerializer.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
-    </ClInclude>
-    <ClInclude Include="json.hpp">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Camera.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MeshFilter.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MeshRenderer.h">
-      <Filter>?¤ë” ?Œì¼</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PrimitiveGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PickingSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PickingRenderTarget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Gizmo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TimeManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="json.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ViewTree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HierarchyView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProjectView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ConsoleView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InspectorView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GameView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GBufferView.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MFC_Engine.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MainFrm.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
-    </ClCompile>
-    <ClCompile Include="ProjectView.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
-    </ClCompile>
-    <ClCompile Include="HierarchyView.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
-    </ClCompile>
-    <ClCompile Include="ViewTree.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
-    </ClCompile>
-    <ClCompile Include="ConsoleView.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
-    </ClCompile>
-    <ClCompile Include="InspectorView.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
-    </ClCompile>
-    <ClCompile Include="SceneView.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
-    </ClCompile>
-    <ClCompile Include="GameView.cpp">
-      <Filter>View</Filter>
-    </ClCompile>
-    <ClCompile Include="GBufferView.cpp">
-      <Filter>View</Filter>
-    </ClCompile>
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GraphicsEngine.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Device.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SwapChain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ConstantBuffer.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GameObject.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Scene.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SceneManager.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SceneSerializer.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp">
-      <Filter>?ŒìŠ¤ ?Œì¼</Filter>
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PrimitiveGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PickingSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PickingRenderTarget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Gizmo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TimeManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ViewTree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HierarchyView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProjectView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ConsoleView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InspectorView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GameView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GBufferView.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MFCEngine.rc">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\file_view.ico">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\file_view_hc.ico">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\class_view.ico">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\class_view_hc.ico">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\fileview.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\fileview_hc.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\classview.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\classview_hc.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\explorer.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\explorer_hc.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\sort.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\sort_hc.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\menuimages.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\menuimages_hc.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\output_wnd.ico">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\output_wnd_hc.ico">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\properties_wnd.ico">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\properties_wnd_hc.ico">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\properties.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\properties_hc.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\userimages.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\MFC_EngineDoc.ico">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\MFC_Engine.ico">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\Toolbar.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\Toolbar256.bmp">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\MFCEngine.rc2">
-      <Filter>ë¦¬ì†Œ???Œì¼</Filter>
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaders.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Picking.hlsl">
+      <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>
-
