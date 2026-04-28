@@ -9,7 +9,6 @@
 #include "InspectorView.h"
 #include "SceneView.h"
 #include "GameView.h"
-
 class CMainFrame : public CMDIFrameWndEx
 {
 	DECLARE_DYNAMIC(CMainFrame)

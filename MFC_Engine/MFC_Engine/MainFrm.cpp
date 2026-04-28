@@ -125,19 +125,31 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_wndSceneView.EnableDocking(CBRS_ALIGN_ANY);
 	m_wndGameView.EnableDocking(CBRS_ALIGN_ANY);
 
-	// 좌측에 Hierarchy 배치
+	// 1. 좌측에 Hierarchy 배치
 	DockPane(&m_wndHierarchyView);
-	// 우측에 Inspector 배치
+	// 2. 우측에 Inspector 배치
 	DockPane(&m_wndInspectorView);
-	// 하단에 Project 배치
+	// 3. 하단에 Project 배치 (기본 하단 도킹)
 	DockPane(&m_wndProjectView);
-	// Project와 Console을 탭으로 묶음
+	// 4. Project와 Console을 탭으로 묶음
 	CDockablePane* pTabbedBar = nullptr;
 	m_wndConsoleView.AttachToTabWnd(&m_wndProjectView, DM_SHOW, TRUE, &pTabbedBar);
 
-	// Scene 뷰와 Game 뷰를 상단에 배치
+	// 5. MDI 탭 그룹 활성화 및 중앙 더미 뷰 배치
+	m_bCanConvertControlBarToMDIChild = TRUE;
+
+	CMDITabInfo mdiTabParams;
+	mdiTabParams.m_style = CMFCTabCtrl::STYLE_3D_VS2005;
+	mdiTabParams.m_bAutoColor = TRUE;
+	EnableMDITabbedGroups(TRUE, mdiTabParams);
+
+	// 6. Scene 뷰와 Game 뷰를 중앙 MDI 탭 문서로 배치
 	DockPane(&m_wndSceneView);
-	m_wndGameView.AttachToTabWnd(&m_wndSceneView, DM_SHOW, TRUE, &pTabbedBar);
+	ControlBarToTabbedDocument(&m_wndSceneView);
+
+	DockPane(&m_wndGameView);
+	//ControlBarToTabbedDocument(&m_wndGameView);
+
 
 	// 보관된 값에 따라 비주얼 관리자 및 스타일을 설정합니다.
 	OnApplicationLook(theApp.m_nAppLook);
