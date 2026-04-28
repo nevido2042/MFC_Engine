@@ -13,7 +13,7 @@
 #include "EngineStructs.h"
 #include "GraphicsEngine.h"
 
-void CPickingSystem::Initialize(ComPtr<ID3D12Device> device, ComPtr<ID3D12RootSignature> rootSignature, int width, int height)
+void CPickingSystem::Initialize(ComPtr<ID3D12Device> device, ID3D12RootSignature* rootSignature, int width, int height)
 {
     // PSO 생성
     ComPtr<ID3DBlob> vertexShader;
@@ -36,7 +36,7 @@ void CPickingSystem::Initialize(ComPtr<ID3D12Device> device, ComPtr<ID3D12RootSi
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
     psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
-    psoDesc.pRootSignature = rootSignature.Get();
+    psoDesc.pRootSignature = rootSignature;
     psoDesc.VS = { vertexShader->GetBufferPointer(), vertexShader->GetBufferSize() };
     psoDesc.PS = { pixelShader->GetBufferPointer(), pixelShader->GetBufferSize() };
     

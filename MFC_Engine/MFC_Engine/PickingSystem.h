@@ -13,7 +13,7 @@ public:
         return instance;
     }
 
-    void Initialize(ComPtr<ID3D12Device> device, ComPtr<ID3D12RootSignature> rootSignature, int width, int height);
+    void Initialize(Microsoft::WRL::ComPtr<ID3D12Device> device, ID3D12RootSignature* rootSignature, int width, int height);
     void Resize(ComPtr<ID3D12Device> device, int width, int height);
     
     // 기즈모 대신 범용적인 추가 렌더링 콜백을 받음

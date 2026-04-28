@@ -1,5 +1,6 @@
 #pragma once
 
+#include "RenderPass.h"
 // 인라인 전방 선언 사용으로 외부 클래스 의존성 제거
 #include "TimeManager.h"
 #include "PrimitiveGenerator.h"
@@ -7,6 +8,10 @@
 #include "Device.h"
 #include "SwapChain.h"
 #include "GBuffer.h"
+#include "GeometryPass.h"
+#include "LightingPass.h"
+#include "DebugPass.h"
+#include "GizmoPass.h"
 
 /**
  * @class CGraphicsEngine
@@ -35,7 +40,7 @@ public:
     ID3D12CommandQueue* GetCommandQueue() { return m_pDevice->GetCommandQueue(); }
     ID3D12CommandAllocator* GetCommandAllocator() { return m_pDevice->GetCommandAllocator(); }
     ID3D12GraphicsCommandList* GetCommandList() { return m_pDevice->GetCommandList(); }
-    ID3D12RootSignature* GetRootSignature() { return m_rootSignatureDeferred.Get(); }
+    ID3D12RootSignature* GetRootSignature() { return m_pGeometryPass ? m_pGeometryPass->GetRootSignature() : nullptr; }
     ID3D12Resource* GetConstantBufferResource() { return m_pConstantBuffer->GetResource(); }
     UINT8* GetConstantBufferPtr() { return m_pConstantBuffer->GetMappedData(); }
     int GetWidth() const { return m_nWidth; }
@@ -48,12 +53,8 @@ public:
     void SubmitCommandList() { if (m_pDevice) m_pDevice->SubmitCommandList(); }
 
 private:
-    // --- 렌더링 파이프라인 구축 관련 함수 ---
-    void CreateRootSignature();     // 쉐이더 자원 바인딩 레이아웃 생성
-    void CreatePipelineState();     // 그래픽 파이프라인 상태(PSO) 생성
     void CreateConstantBuffer();    // 상수 버퍼 생성
 
-    void RenderGameObject(std::shared_ptr<class CGameObject> pObj, int& objIndex, class CLight* pLight);
 
 private:
     // --- DX12 핵심 장치 ---
@@ -62,15 +63,11 @@ private:
     std::unique_ptr<CSwapChain> m_pDebugSwapChain;
     std::unique_ptr<CGBuffer> m_pGBuffer;
 
-    // --- 렌더링 파이프라인 구축 ---
-    ComPtr<ID3D12RootSignature> m_rootSignatureDeferred;
-    ComPtr<ID3D12RootSignature> m_rootSignatureLighting;
-    ComPtr<ID3D12RootSignature> m_rootSignatureDebug;
-
-    ComPtr<ID3D12PipelineState> m_pipelineStateDeferred;
-    ComPtr<ID3D12PipelineState> m_pipelineStateLighting;
-    ComPtr<ID3D12PipelineState> m_pipelineStateDebug;
-    ComPtr<ID3D12PipelineState> m_pipelineStateGizmo; // 기즈모용 PSO (깊이 테스트 무시)
+    // --- 렌더 패스 ---
+    std::unique_ptr<class CGeometryPass> m_pGeometryPass;
+    std::unique_ptr<class CLightingPass> m_pLightingPass;
+    std::unique_ptr<class CGizmoPass> m_pGizmoPass;
+    std::unique_ptr<class CDebugPass> m_pDebugPass;
     
     std::unique_ptr<CConstantBuffer> m_pConstantBuffer; // 상수 버퍼 매니저
 

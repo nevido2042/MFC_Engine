@@ -11,10 +11,11 @@ public:
   ~CGizmo();
 
   void Initialize(ID3D12Device *pDevice);
+  ID3D12RootSignature* GetRootSignature() const { return nullptr; }
 
   // 일반 렌더링용
   void Render(ID3D12GraphicsCommandList *pCommandList,
-              ID3D12PipelineState* pPSO, ID3D12RootSignature* pRootSignature,
+              ID3D12RootSignature* pRootSignature,
               CGameObject *pSelectedObj, int nWidth, int nHeight,
               CConstantBuffer *pCB);
 

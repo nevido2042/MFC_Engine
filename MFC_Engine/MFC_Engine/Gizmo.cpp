@@ -22,11 +22,8 @@ void CGizmo::Initialize(ID3D12Device* pDevice)
     m_pDevice = pDevice;
 }
 
-void CGizmo::Render(ID3D12GraphicsCommandList* pCommandList, ID3D12PipelineState* pPSO, ID3D12RootSignature* pRootSignature, CGameObject* pSelectedObj, int nWidth, int nHeight, CConstantBuffer* pCB)
+void CGizmo::Render(ID3D12GraphicsCommandList* pCommandList, ID3D12RootSignature* pRootSignature, CGameObject* pSelectedObj, int nWidth, int nHeight, CConstantBuffer* pCB)
 {
-    if (pPSO) pCommandList->SetPipelineState(pPSO);
-    if (pRootSignature) pCommandList->SetGraphicsRootSignature(pRootSignature);
-    
     DrawAxes(pCommandList, pSelectedObj, nWidth, nHeight, false, pCB, nullptr, nullptr);
 }
 
@@ -93,7 +90,7 @@ void CGizmo::DrawAxes(ID3D12GraphicsCommandList* pCommandList, CGameObject* pSel
             cb.objectColorID.x = (nID & 0xFF) / 255.0f;
             cb.objectColorID.y = ((nID >> 8) & 0xFF) / 255.0f;
             cb.objectColorID.z = ((nID >> 16) & 0xFF) / 255.0f;
-            cb.objectColorID.w = ((nID >> 24) & 0xFF) / 255.0f;
+            cb.objectColorID.w = 1.0f;
             cb.meshColor = { 0, 0, 0, 0 };
             
             if (pRawData && pRawCB)

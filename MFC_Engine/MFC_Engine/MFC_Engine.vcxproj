@@ -228,6 +228,11 @@
     <ClInclude Include="Light.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="GBuffer.h" />
+    <ClInclude Include="RenderPass.h" />
+    <ClInclude Include="GeometryPass.h" />
+    <ClInclude Include="LightingPass.h" />
+    <ClInclude Include="DebugPass.h" />
+    <ClInclude Include="GizmoPass.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HierarchyView.cpp" />
@@ -264,6 +269,10 @@
     <ClCompile Include="Gizmo.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="GBuffer.cpp" />
+    <ClCompile Include="GeometryPass.cpp" />
+    <ClCompile Include="LightingPass.cpp" />
+    <ClCompile Include="DebugPass.cpp" />
+    <ClCompile Include="GizmoPass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MFCEngine.rc" />
