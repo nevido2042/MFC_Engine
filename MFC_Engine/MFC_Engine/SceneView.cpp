@@ -168,7 +168,7 @@ void CSceneView::OnLButtonDown(UINT nFlags, CPoint point)
 
     if (!bIsPicked)
     {
-        CDockablePane::OnLButtonDown(nFlags, point);
+        CWnd::OnLButtonDown(nFlags, point);
     }
 }
 
@@ -182,7 +182,7 @@ void CSceneView::OnLButtonUp(UINT nFlags, CPoint point)
 
     if (!bWasGizmoDragging && !m_pSelectedObj)
     {
-        CDockablePane::OnLButtonUp(nFlags, point);
+        CWnd::OnLButtonUp(nFlags, point);
     }
 }
 
@@ -246,7 +246,7 @@ void CSceneView::OnMouseMove(UINT nFlags, CPoint point)
     }
     else if (m_bLButtonDown && m_gizmoAxis == 0)
     {
-        CDockablePane::OnMouseMove(nFlags, point);
+        CWnd::OnMouseMove(nFlags, point);
     }
     
     m_lastMousePos = point;

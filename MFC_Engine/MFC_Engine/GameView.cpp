@@ -21,6 +21,9 @@ BEGIN_MESSAGE_MAP(CGameView, CDockablePane)
 	ON_WM_SIZE()
 	ON_WM_PAINT()
 	ON_WM_SETFOCUS()
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
+	ON_WM_MOUSEMOVE()
 END_MESSAGE_MAP()
 
 int CGameView::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -52,4 +55,19 @@ void CGameView::OnPaint()
 void CGameView::OnSetFocus(CWnd* pOldWnd)
 {
 	CDockablePane::OnSetFocus(pOldWnd);
+}
+
+void CGameView::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	CWnd::OnLButtonDown(nFlags, point);
+}
+
+void CGameView::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	CWnd::OnLButtonUp(nFlags, point);
+}
+
+void CGameView::OnMouseMove(UINT nFlags, CPoint point)
+{
+	CWnd::OnMouseMove(nFlags, point);
 }
