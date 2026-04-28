@@ -226,6 +226,8 @@
     <ClInclude Include="Device.h" />
     <ClInclude Include="Gizmo.h" />
     <ClInclude Include="Light.h" />
+    <ClInclude Include="SwapChain.h" />
+    <ClInclude Include="GBuffer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HierarchyView.cpp" />
@@ -260,6 +262,8 @@
     <ClCompile Include="ConstantBuffer.cpp" />
     <ClCompile Include="Device.cpp" />
     <ClCompile Include="Gizmo.cpp" />
+    <ClCompile Include="SwapChain.cpp" />
+    <ClCompile Include="GBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MFCEngine.rc" />

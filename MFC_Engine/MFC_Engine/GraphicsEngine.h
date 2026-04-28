@@ -5,6 +5,8 @@
 #include "PrimitiveGenerator.h"
 #include "ConstantBuffer.h"
 #include "Device.h"
+#include "SwapChain.h"
+#include "GBuffer.h"
 
 /**
  * @class CGraphicsEngine
@@ -39,16 +41,13 @@ public:
     int GetWidth() const { return m_nWidth; }
     int GetHeight() const { return m_nHeight; }
 
-    void WaitGPU() { if (m_pDevice) m_pDevice->WaitGPU(); }
+    void WaitGPU() { if (m_pDevice) m_pDevice->WaitForGPU(); }
+    std::mutex& GetMutex() { return m_mutex; }
+
+    void PrepareCommandList() { if (m_pDevice) m_pDevice->PrepareCommandList(); }
+    void SubmitCommandList() { if (m_pDevice) m_pDevice->SubmitCommandList(); }
 
 private:
-    // --- 초기화 내부 함수 ---
-    void CreateDevice();
-    void CreateCommandQueue();
-    void CreateSwapChain(HWND hWnd, int width, int height);
-    void CreateDescriptorHeaps();
-    void CreateRenderTargets();
-    
     // --- 렌더링 파이프라인 구축 관련 함수 ---
     void CreateRootSignature();     // 쉐이더 자원 바인딩 레이아웃 생성
     void CreatePipelineState();     // 그래픽 파이프라인 상태(PSO) 생성
@@ -56,11 +55,13 @@ private:
 
     void RenderGameObject(std::shared_ptr<class CGameObject> pObj, int& objIndex, class CLight* pLight);
     void RenderGizmo(class CGizmo* pGizmo, std::shared_ptr<class CGameObject> pSelectedObj);
-    void WaitForPreviousFrame();
 
 private:
     // --- DX12 핵심 장치 ---
     std::unique_ptr<CDevice> m_pDevice;
+    std::unique_ptr<CSwapChain> m_pMainSwapChain;
+    std::unique_ptr<CSwapChain> m_pDebugSwapChain;
+    std::unique_ptr<CGBuffer> m_pGBuffer;
 
     // --- 렌더링 파이프라인 구축 ---
     ComPtr<ID3D12RootSignature> m_rootSignatureDeferred;

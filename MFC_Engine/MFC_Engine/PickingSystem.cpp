@@ -99,8 +99,9 @@ UINT CPickingSystem::Pick(int x, int y, CGraphicsEngine* pEngine, PickingOverlay
 {
     if (!pEngine || !m_pPickingRenderTarget) return 0;
 
-    auto commandQueue = pEngine->GetCommandQueue();
-    auto commandAllocator = pEngine->GetCommandAllocator();
+    // 엔진의 렌더링 스레드와 동기화
+    std::lock_guard<std::mutex> lock(pEngine->GetMutex());
+
     auto commandList = pEngine->GetCommandList();
     auto rootSignature = pEngine->GetRootSignature();
     auto constantBuffer = pEngine->GetConstantBufferResource();
@@ -108,9 +109,8 @@ UINT CPickingSystem::Pick(int x, int y, CGraphicsEngine* pEngine, PickingOverlay
     int width = pEngine->GetWidth();
     int height = pEngine->GetHeight();
 
-    // 커맨드 리스트 초기화
-    commandAllocator->Reset();
-    commandList->Reset(commandAllocator, nullptr);
+    // 커맨드 리스트 초기화 (엔진의 통합 메서드 사용)
+    pEngine->PrepareCommandList();
 
     // 1. 렌더링 패스 수행
     RenderPickingPass(CSceneManager::GetInstance().GetActiveScene(), commandList, rootSignature, width, height, constantBuffer, cbvDataBegin, overlayFunc);
@@ -118,10 +118,8 @@ UINT CPickingSystem::Pick(int x, int y, CGraphicsEngine* pEngine, PickingOverlay
     // 2. 결과 읽기 예약
     m_pPickingRenderTarget->ReadPixelAsync(commandList, x, y);
 
-    // 3. 커맨드 리스트 닫기 및 실행
-    ThrowIfFailed(commandList->Close());
-    ID3D12CommandList* ppCommandLists[] = { commandList };
-    commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+    // 3. 커맨드 리스트 닫기 및 실행 (엔진의 통합 메서드 사용)
+    pEngine->SubmitCommandList();
 
     // 4. GPU 대기 (피킹 데이터 동기화)
     pEngine->WaitGPU();

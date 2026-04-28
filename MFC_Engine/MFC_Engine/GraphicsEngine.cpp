@@ -34,7 +34,13 @@ bool CGraphicsEngine::Initialize(HWND hWnd, int width, int height)
     m_timeManager.Initialize();
 
     m_pDevice = std::make_unique<CDevice>();
-    m_pDevice->Initialize(hWnd, m_nWidth, m_nHeight);
+    m_pDevice->Initialize();
+
+    m_pMainSwapChain = std::make_unique<CSwapChain>();
+    m_pMainSwapChain->Initialize(m_pDevice.get(), hWnd, m_nWidth, m_nHeight);
+
+    m_pGBuffer = std::make_unique<CGBuffer>();
+    m_pGBuffer->Initialize(m_pDevice.get(), m_nWidth, m_nHeight);
 
     CreateRootSignature();
     CreatePipelineState();
@@ -273,18 +279,28 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
     std::lock_guard<std::mutex> lock(m_mutex);
     m_timeManager.Update();
 
-    m_pDevice->PrepareRender(); // Clears main DSV, handles SwapChain transitions
+    m_pDevice->PrepareCommandList(); // Reset command list
+
+    // Get current render target resource from main swapchain
+    auto rtv = m_pMainSwapChain->GetRenderTarget();
     auto commandList = m_pDevice->GetCommandList();
+
+    // Transition Main SwapChain to Render Target (was done in PrepareRender before)
+    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(rtv, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
     // ==========================================
     // Pass 1: Geometry Pass (G-Buffer)
     // ==========================================
-    m_pDevice->TransitionGBuffersToRenderTarget();
-    m_pDevice->ClearAndSetGBuffers();
+    m_pGBuffer->TransitionToRenderTarget(commandList);
+    m_pGBuffer->ClearAndSet(commandList);
 
     commandList->SetPipelineState(m_pipelineStateDeferred.Get());
     commandList->SetGraphicsRootSignature(m_rootSignatureDeferred.Get());
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // Set Viewport and Scissor for Main View
+    commandList->RSSetViewports(1, &m_pMainSwapChain->GetViewport());
+    commandList->RSSetScissorRects(1, &m_pMainSwapChain->GetScissorRect());
 
     std::shared_ptr<CLight> pMainLight = nullptr;
 
@@ -341,8 +357,15 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
     // ==========================================
     // Pass 2: Lighting Pass
     // ==========================================
-    m_pDevice->TransitionGBuffersToPixelShaderResource();
-    m_pDevice->SetMainRenderTarget();
+    m_pGBuffer->TransitionToShaderResource(commandList);
+    
+    // Set Main Render Target
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_pMainSwapChain->GetRtvHandle();
+    commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr); // no depth for lighting pass
+    
+    // Clear Main Render Target
+    const float clearColor[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
     commandList->SetPipelineState(m_pipelineStateLighting.Get());
     commandList->SetGraphicsRootSignature(m_rootSignatureLighting.Get());
@@ -370,9 +393,9 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
     commandList->SetGraphicsRootConstantBufferView(0, m_pConstantBuffer->GetGPUVirtualAddress(1023));
 
     // Bind SRVs
-    ID3D12DescriptorHeap* descriptorHeaps[] = { m_pDevice->GetGBufferSrvHeap() };
+    ID3D12DescriptorHeap* descriptorHeaps[] = { m_pGBuffer->GetSrvHeap() };
     commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-    commandList->SetGraphicsRootDescriptorTable(1, m_pDevice->GetGBufferSrvHeap()->GetGPUDescriptorHandleForHeapStart());
+    commandList->SetGraphicsRootDescriptorTable(1, m_pGBuffer->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
 
     // Draw full-screen quad (3 vertices generated in VS)
     commandList->DrawInstanced(3, 1, 0, 0);
@@ -385,18 +408,38 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
         RenderGizmo(pGizmo, pSelectedObj);
     }
 
-    m_pDevice->SubmitRender();
+    // Transition Main SwapChain back to Present
+    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(rtv, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+    m_pDevice->SubmitCommandList();
+    m_pMainSwapChain->Present();
+    m_pDevice->WaitForGPU();
 }
 
 void CGraphicsEngine::RenderDebugGBuffers()
 {
     if (!m_bIsInitialized) return;
+    if (!m_pDebugSwapChain || !m_pDebugSwapChain->GetRenderTarget()) return; // Debug 뷰가 초기화 안됐으면 그리지 않음
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    if (!m_pDevice->PrepareDebugRender()) return;
-
+    m_pDevice->PrepareCommandList();
+    
     auto commandList = m_pDevice->GetCommandList();
+    auto rtv = m_pDebugSwapChain->GetRenderTarget();
+
+    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(rtv, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+    // Viewport & Scissor 설정
+    commandList->RSSetViewports(1, &m_pDebugSwapChain->GetViewport());
+    commandList->RSSetScissorRects(1, &m_pDebugSwapChain->GetScissorRect());
+
+    // Render Target 설정 및 Clear
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_pDebugSwapChain->GetRtvHandle();
+    commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+    
+    const float clearColor[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
     // Use Debug Pipeline State
     commandList->SetPipelineState(m_pipelineStateDebug.Get());
@@ -404,16 +447,20 @@ void CGraphicsEngine::RenderDebugGBuffers()
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     // Bind SRVs
-    ID3D12DescriptorHeap* descriptorHeaps[] = { m_pDevice->GetGBufferSrvHeap() };
+    ID3D12DescriptorHeap* descriptorHeaps[] = { m_pGBuffer->GetSrvHeap() };
     commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
     
     // The Debug Root Signature expects the SRV table at index 0 because there's no CBV
-    commandList->SetGraphicsRootDescriptorTable(0, m_pDevice->GetGBufferSrvHeap()->GetGPUDescriptorHandleForHeapStart());
+    commandList->SetGraphicsRootDescriptorTable(0, m_pGBuffer->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
 
     // Draw full-screen quad
     commandList->DrawInstanced(3, 1, 0, 0);
 
-    m_pDevice->SubmitDebugRender();
+    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(rtv, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+    m_pDevice->SubmitCommandList();
+    m_pDebugSwapChain->Present();
+    m_pDevice->WaitForGPU();
 }
 
 void CGraphicsEngine::Resize(int width, int height)
@@ -427,7 +474,10 @@ void CGraphicsEngine::Resize(int width, int height)
     m_nWidth = width;
     m_nHeight = height;
 
-    m_pDevice->Resize(width, height);
+    m_pDevice->WaitForGPU();
+    m_pMainSwapChain->Resize(m_pDevice.get(), width, height);
+    m_pGBuffer->Resize(m_pDevice.get(), width, height);
+    
     CPickingSystem::GetInstance().Resize(m_pDevice->GetDevice(), width, height);
 }
 
@@ -435,15 +485,21 @@ bool CGraphicsEngine::InitializeDebugSwapChain(HWND hWnd, int width, int height)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_pDevice) return false;
-    return m_pDevice->InitializeDebugSwapChain(hWnd, width, height);
+    
+    if (!m_pDebugSwapChain)
+        m_pDebugSwapChain = std::make_unique<CSwapChain>();
+        
+    m_pDebugSwapChain->Initialize(m_pDevice.get(), hWnd, width, height);
+    return true;
 }
 
 void CGraphicsEngine::ResizeDebugSwapChain(int width, int height)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
-    if (m_pDevice)
+    if (m_pDebugSwapChain)
     {
-        m_pDevice->ResizeDebugSwapChain(width, height);
+        m_pDevice->WaitForGPU();
+        m_pDebugSwapChain->Resize(m_pDevice.get(), width, height);
     }
 }
 
@@ -537,10 +593,5 @@ void CGraphicsEngine::RenderGizmo(CGizmo* pGizmo, std::shared_ptr<CGameObject> p
         
         pGizmo->Render(commandList, pSelectedObj.get(), m_nWidth, m_nHeight, m_pConstantBuffer.get());
     }
-}
-
-void CGraphicsEngine::WaitForPreviousFrame()
-{
-    m_pDevice->WaitForPreviousFrame();
 }
 

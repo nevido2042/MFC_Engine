@@ -59,3 +59,32 @@ struct CD3DX12_RESOURCE_BARRIER : public D3D12_RESOURCE_BARRIER
         return result;
     }
 };
+
+struct CD3DX12_HEAP_PROPERTIES : public D3D12_HEAP_PROPERTIES
+{
+    CD3DX12_HEAP_PROPERTIES() = default;
+    explicit CD3DX12_HEAP_PROPERTIES(const D3D12_HEAP_PROPERTIES &o) : D3D12_HEAP_PROPERTIES(o) {}
+    CD3DX12_HEAP_PROPERTIES(
+        D3D12_HEAP_TYPE type,
+        UINT creationMask = 1,
+        UINT nodeMask = 1)
+    {
+        Type = type;
+        CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+        CreationNodeMask = creationMask;
+        VisibleNodeMask = nodeMask;
+    }
+    CD3DX12_HEAP_PROPERTIES(
+        D3D12_CPU_PAGE_PROPERTY cpuPageProperty,
+        D3D12_MEMORY_POOL memoryPoolPreference,
+        UINT creationMask = 1,
+        UINT nodeMask = 1)
+    {
+        Type = D3D12_HEAP_TYPE_CUSTOM;
+        CPUPageProperty = cpuPageProperty;
+        MemoryPoolPreference = memoryPoolPreference;
+        CreationNodeMask = creationMask;
+        VisibleNodeMask = nodeMask;
+    }
+};
