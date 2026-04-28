@@ -6,10 +6,6 @@ SamplerState gSampler : register(s0);
 
 cbuffer LightConstantBuffer : register(b0)
 {
-    float4x4 matWVP;
-    float4x4 matWorld;
-    float4 objectColorID;
-    float4 meshColor;
     float4 lightDir;
     float4 lightColor;
     float4 ambientColor;

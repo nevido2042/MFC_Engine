@@ -18,6 +18,8 @@ public:
 
     ID3D12DescriptorHeap* GetSrvHeap() const { return m_pSrvHeap.Get(); }
     D3D12_CPU_DESCRIPTOR_HANDLE GetDsvHandle() const;
+    D3D12_CPU_DESCRIPTOR_HANDLE GetRtvHandle(int index) const;
+    ID3D12Resource* GetResource(int index) const { return (index >= 0 && index < BufferCount) ? m_pGBuffers[index].Get() : nullptr; }
 
 private:
     void CreateHeaps(CDevice* pDevice);
@@ -25,7 +27,7 @@ private:
     void ClearResources();
 
 private:
-    static const UINT BufferCount = 3; // Position, Normal, Albedo
+    static const UINT BufferCount = 4; // Position, Normal, Albedo, ID
 
     ComPtr<ID3D12Resource> m_pGBuffers[BufferCount];
     ComPtr<ID3D12DescriptorHeap> m_pRtvHeap;

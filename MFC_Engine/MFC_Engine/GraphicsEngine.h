@@ -45,6 +45,7 @@ public:
     UINT8* GetConstantBufferPtr() { return m_pConstantBuffer->GetMappedData(); }
     int GetWidth() const { return m_nWidth; }
     int GetHeight() const { return m_nHeight; }
+    ID3D12Resource* GetGBufferResource(int index) { return m_pGBuffer ? m_pGBuffer->GetResource(index) : nullptr; }
 
     void WaitGPU() { if (m_pDevice) m_pDevice->WaitForGPU(); }
     std::mutex& GetMutex() { return m_mutex; }

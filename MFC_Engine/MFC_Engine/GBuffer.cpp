@@ -90,7 +90,8 @@ void CGBuffer::CreateResources(CDevice* pDevice, int width, int height)
     DXGI_FORMAT formats[BufferCount] = {
         DXGI_FORMAT_R32G32B32A32_FLOAT, // Position
         DXGI_FORMAT_R16G16B16A16_FLOAT, // Normal
-        DXGI_FORMAT_R8G8B8A8_UNORM      // Albedo
+        DXGI_FORMAT_R8G8B8A8_UNORM,     // Albedo
+        DXGI_FORMAT_R8G8B8A8_UNORM      // ID
     };
 
     D3D12_CLEAR_VALUE clearValue = {};
@@ -213,6 +214,13 @@ void CGBuffer::ClearAndSet(ID3D12GraphicsCommandList* pCmdList)
     pCmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
     pCmdList->OMSetRenderTargets(BufferCount, rtvHandles, FALSE, &dsvHandle);
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE CGBuffer::GetRtvHandle(int index) const
+{
+    CD3DX12_CPU_DESCRIPTOR_HANDLE hRtv(m_pRtvHeap->GetCPUDescriptorHandleForHeapStart());
+    hRtv.Offset(index, m_nRtvDescriptorSize);
+    return hRtv;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE CGBuffer::GetDsvHandle() const

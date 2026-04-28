@@ -1,30 +1,28 @@
 #include "pch.h"
 #include "GizmoPass.h"
 #include "Gizmo.h"
+#include "GBuffer.h"
 #include "SwapChain.h"
 #include "ConstantBuffer.h"
 #include "d3dx12.h"
-#include <d3dcompiler.h>
 
 void CGizmoPass::Initialize(ID3D12Device* pDevice)
 {
-    // 1. Root Signature
-    D3D12_ROOT_PARAMETER rootParameters[1];
+    // 1. Root Signature (Standard D3D12 structs for stability)
+    D3D12_ROOT_PARAMETER rootParameters[1] = {};
     rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
     rootParameters[0].Descriptor.ShaderRegister = 0;
     rootParameters[0].Descriptor.RegisterSpace = 0;
     rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
-    D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
-    rootSignatureDesc.NumParameters = 1;
-    rootSignatureDesc.pParameters = rootParameters;
-    rootSignatureDesc.NumStaticSamplers = 0;
-    rootSignatureDesc.pStaticSamplers = nullptr;
-    rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+    D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
+    rootSigDesc.NumParameters = _countof(rootParameters);
+    rootSigDesc.pParameters = rootParameters;
+    rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
     ComPtr<ID3DBlob> signature;
     ComPtr<ID3DBlob> error;
-    ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+    ThrowIfFailed(D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
     ThrowIfFailed(pDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)));
 
     // 2. Pipeline State
@@ -34,11 +32,11 @@ void CGizmoPass::Initialize(ID3D12Device* pDevice)
     compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
-    if (FAILED(D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vs, &error)))
+    if (FAILED(D3DCompileFromFile(L"Gizmo.hlsl", nullptr, nullptr, "VSMain", "vs_5_1", compileFlags, 0, &vs, &error)))
     {
         if (error) OutputDebugStringA((char*)error->GetBufferPointer());
     }
-    if (FAILED(D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &ps, &error)))
+    if (FAILED(D3DCompileFromFile(L"Gizmo.hlsl", nullptr, nullptr, "PSMain", "ps_5_1", compileFlags, 0, &ps, &error)))
     {
         if (error) OutputDebugStringA((char*)error->GetBufferPointer());
     }
@@ -58,32 +56,35 @@ void CGizmoPass::Initialize(ID3D12Device* pDevice)
     
     psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
     psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-    psoDesc.RasterizerState.FrontCounterClockwise = FALSE;
-    psoDesc.RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
-    psoDesc.RasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-    psoDesc.RasterizerState.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
     psoDesc.RasterizerState.DepthClipEnable = TRUE;
 
     psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
     psoDesc.BlendState.IndependentBlendEnable = FALSE;
-    const D3D12_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
-    {
-        FALSE,FALSE,
-        D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
-        D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
-        D3D12_LOGIC_OP_NOOP,
-        D3D12_COLOR_WRITE_ENABLE_ALL,
-    };
+    
+    // Proper Blend State initialization
+    D3D12_RENDER_TARGET_BLEND_DESC rtBlendDesc = {};
+    rtBlendDesc.BlendEnable = FALSE;
+    rtBlendDesc.LogicOpEnable = FALSE;
+    rtBlendDesc.SrcBlend = D3D12_BLEND_ONE;
+    rtBlendDesc.DestBlend = D3D12_BLEND_ZERO;
+    rtBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+    rtBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+    rtBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+    rtBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+    rtBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
+    rtBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
     for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
-        psoDesc.BlendState.RenderTarget[i] = defaultRenderTargetBlendDesc;
+        psoDesc.BlendState.RenderTarget[i] = rtBlendDesc;
     
     psoDesc.DepthStencilState.DepthEnable = FALSE;
     psoDesc.DepthStencilState.StencilEnable = FALSE;
     
     psoDesc.SampleMask = UINT_MAX;
     psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    psoDesc.NumRenderTargets = 1;
+    psoDesc.NumRenderTargets = 4;
     psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.RTVFormats[3] = DXGI_FORMAT_R8G8B8A8_UNORM;
     psoDesc.SampleDesc.Count = 1;
 
     ThrowIfFailed(pDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
@@ -91,13 +92,29 @@ void CGizmoPass::Initialize(ID3D12Device* pDevice)
 
 void CGizmoPass::Execute(const RenderContext& context)
 {
-    if (!context.pGizmo || !context.pSelectedObj) return;
+    if (!context.resources.pGizmo || !context.scene.pSelectedObj) return;
 
     context.pCommandList->SetPipelineState(m_pipelineState.Get());
     context.pCommandList->SetGraphicsRootSignature(m_rootSignature.Get());
     
-    context.pCommandList->RSSetViewports(1, &context.pMainSwapChain->GetViewport());
-    context.pCommandList->RSSetScissorRects(1, &context.pMainSwapChain->GetScissorRect());
+    // Transition GBuffer to RENDER_TARGET state
+    context.resources.pGBuffer->TransitionToRenderTarget(context.pCommandList);
 
-    context.pGizmo->Render(context.pCommandList, m_rootSignature.Get(), context.pSelectedObj, context.nWidth, context.nHeight, context.pCB);
+    // Set Render Targets (Target 0: Main, Target 1-3: GBuffer)
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[4] = {};
+    rtvHandles[0] = context.resources.pMainSwapChain->GetRtvHandle();
+    rtvHandles[1] = context.resources.pGBuffer->GetRtvHandle(1);
+    rtvHandles[2] = context.resources.pGBuffer->GetRtvHandle(2);
+    rtvHandles[3] = context.resources.pGBuffer->GetRtvHandle(3);
+    
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = context.resources.pGBuffer->GetDsvHandle();
+    context.pCommandList->OMSetRenderTargets(4, rtvHandles, FALSE, &dsvHandle);
+
+    context.pCommandList->RSSetViewports(1, &context.resources.pMainSwapChain->GetViewport());
+    context.pCommandList->RSSetScissorRects(1, &context.resources.pMainSwapChain->GetScissorRect());
+
+    context.resources.pGizmo->Render(context.pCommandList, m_rootSignature.Get(), context.scene.pSelectedObj, context.nWidth, context.nHeight, context.pCB);
+
+    // Transition GBuffer back to SHADER_RESOURCE state for next frame/passes
+    context.resources.pGBuffer->TransitionToShaderResource(context.pCommandList);
 }

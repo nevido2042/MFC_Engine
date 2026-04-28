@@ -4,9 +4,6 @@ cbuffer SceneConstantBuffer : register(b0)
     float4x4 matWorld;
     float4 objectColorID;
     float4 meshColor;
-    float4 lightDir;
-    float4 lightColor;
-    float4 ambientColor;
 };
 
 struct VS_INPUT
@@ -40,18 +37,10 @@ PS_INPUT VSMain(VS_INPUT input)
 
 float4 PSMain(PS_INPUT input) : SV_TARGET
 {
+    // If a specific mesh color is provided (e.g. for gizmos or highlights), use it.
     if (meshColor.a > 0.0f)
         return meshColor;
 
-    // Normalize normal and light direction
-    float3 normal = normalize(input.normal);
-    float3 L = normalize(-lightDir.xyz);
-
-    // Lambertian lighting
-    float NdotL = max(0.0f, dot(normal, L));
-
-    // Calculate final color
-    float3 finalColor = input.color.rgb * (ambientColor.rgb + lightColor.rgb * NdotL);
-
-    return float4(finalColor, input.color.a);
+    // Otherwise, return the vertex color (Unlit)
+    return input.color;
 }

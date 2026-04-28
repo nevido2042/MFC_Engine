@@ -4,9 +4,6 @@ cbuffer SceneConstantBuffer : register(b0)
     float4x4 matWorld;
     float4 objectColorID;
     float4 meshColor;
-    float4 lightDir;
-    float4 lightColor;
-    float4 ambientColor;
 };
 
 struct VS_INPUT
@@ -29,6 +26,7 @@ struct PS_OUTPUT
     float4 position : SV_Target0;
     float4 normal   : SV_Target1;
     float4 albedo   : SV_Target2;
+    float4 id       : SV_Target3; // Added for unified Picking
 };
 
 PS_INPUT VSMain(VS_INPUT input)
@@ -56,6 +54,9 @@ PS_OUTPUT PSMain(PS_INPUT input)
         output.albedo = meshColor;
     else
         output.albedo = input.color;
+
+    // Output Object ID for unified picking
+    output.id = objectColorID;
 
     return output;
 }

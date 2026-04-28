@@ -2,23 +2,32 @@
 #include "DebugPass.h"
 #include "GBuffer.h"
 #include "SwapChain.h"
+#include "EngineStructs.h"
+#include "ConstantBuffer.h"
 #include <d3dcompiler.h>
 
 void CDebugPass::Initialize(ID3D12Device* pDevice)
 {
     // 1. Root Signature
-    D3D12_DESCRIPTOR_RANGE srvTable;
-    srvTable.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    srvTable.NumDescriptors = 3;
-    srvTable.BaseShaderRegister = 0;
-    srvTable.RegisterSpace = 0;
-    srvTable.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-    D3D12_ROOT_PARAMETER rootParameters[1];
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = 1;
-    rootParameters[0].DescriptorTable.pDescriptorRanges = &srvTable;
+    D3D12_ROOT_PARAMETER rootParameters[2];
+    // CBV
+    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[0].Descriptor.ShaderRegister = 0;
+    rootParameters[0].Descriptor.RegisterSpace = 0;
     rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+    // SRV Table
+    D3D12_DESCRIPTOR_RANGE srvRange = {};
+    srvRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    srvRange.NumDescriptors = 4; // Up to 4 GBuffers
+    srvRange.BaseShaderRegister = 0;
+    srvRange.RegisterSpace = 0;
+    srvRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[1].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[1].DescriptorTable.pDescriptorRanges = &srvRange;
+    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
     D3D12_STATIC_SAMPLER_DESC samplerDesc = {};
     samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
@@ -32,7 +41,7 @@ void CDebugPass::Initialize(ID3D12Device* pDevice)
     samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
     D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
-    rootSignatureDesc.NumParameters = 1;
+    rootSignatureDesc.NumParameters = 2;
     rootSignatureDesc.pParameters = rootParameters;
     rootSignatureDesc.NumStaticSamplers = 1;
     rootSignatureDesc.pStaticSamplers = &samplerDesc;
@@ -50,11 +59,13 @@ void CDebugPass::Initialize(ID3D12Device* pDevice)
     compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
-    if (FAILED(D3DCompileFromFile(L"DebugGBuffer.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vs, &error))) {
-        if (error) OutputDebugStringA((char*)error->GetBufferPointer());
+    if (FAILED(D3DCompileFromFile(L"DebugGBuffer.hlsl", nullptr, nullptr, "VSMain", "vs_5_1", compileFlags, 0, &vs, &error))) {
+        if (error) MessageBoxA(NULL, (char*)error->GetBufferPointer(), "Shader Compile Error (VS)", MB_OK);
+        return;
     }
-    if (FAILED(D3DCompileFromFile(L"DebugGBuffer.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &ps, &error))) {
-        if (error) OutputDebugStringA((char*)error->GetBufferPointer());
+    if (FAILED(D3DCompileFromFile(L"DebugGBuffer.hlsl", nullptr, nullptr, "PSMain", "ps_5_1", compileFlags, 0, &ps, &error))) {
+        if (error) MessageBoxA(NULL, (char*)error->GetBufferPointer(), "Shader Compile Error (PS)", MB_OK);
+        return;
     }
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
@@ -92,20 +103,32 @@ void CDebugPass::Initialize(ID3D12Device* pDevice)
 
 void CDebugPass::Execute(const RenderContext& context)
 {
-    if (!context.pGBuffer) return;
+    if (!context.resources.pGBuffer) return;
 
     ID3D12GraphicsCommandList* pCommandList = context.pCommandList;
+
+    // Fill Debug Constant Buffer
+    DebugConstantBuffer dbgCb = {};
+    dbgCb.nBufferCount = 4;
+    dbgCb.nGridCols = 2;
+    dbgCb.nGridRows = 2;
+    dbgCb.nBufferTypes[0] = 2; // Position (Target0)
+    dbgCb.nBufferTypes[1] = 1; // Normal (Target1)
+    dbgCb.nBufferTypes[2] = 0; // Albedo (Target2)
+    dbgCb.nBufferTypes[3] = 3; // ID (Target3)
+
+    context.pCB->Update(512, &dbgCb, sizeof(dbgCb));
 
     pCommandList->SetPipelineState(m_pipelineState.Get());
     pCommandList->SetGraphicsRootSignature(m_rootSignature.Get());
     pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // Bind SRVs
-    ID3D12DescriptorHeap* descriptorHeaps[] = { context.pGBuffer->GetSrvHeap() };
-    pCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+    // Set Root Parameters
+    pCommandList->SetGraphicsRootConstantBufferView(0, context.pCB->GetGPUVirtualAddress(512));
     
-    // The Debug Root Signature expects the SRV table at index 0
-    pCommandList->SetGraphicsRootDescriptorTable(0, context.pGBuffer->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
+    ID3D12DescriptorHeap* descriptorHeaps[] = { context.resources.pGBuffer->GetSrvHeap() };
+    pCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+    pCommandList->SetGraphicsRootDescriptorTable(1, context.resources.pGBuffer->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
 
     // Draw full-screen quad (3 vertices for a triangle covering the screen)
     pCommandList->DrawInstanced(3, 1, 0, 0);

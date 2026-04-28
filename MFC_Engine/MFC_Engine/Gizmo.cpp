@@ -66,9 +66,9 @@ void CGizmo::DrawAxes(ID3D12GraphicsCommandList* pCommandList, CGameObject* pSel
     }
 
     AxisInfo axes[] = {
-        { { 1.0f, 0.05f, 0.05f }, { 0.5f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, 0xFFFF0001 }, // X-Axis (Red)
-        { { 0.05f, 1.0f, 0.05f }, { 0.0f, 0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f }, 0xFFFF0002 }, // Y-Axis (Green)
-        { { 0.05f, 0.05f, 1.0f }, { 0.0f, 0.0f, 0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f }, 0xFFFF0003 }  // Z-Axis (Blue)
+        { { 1.0f, 0.05f, 0.05f }, { 0.5f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, 0xFF0001 }, // X-Axis (Red)
+        { { 0.05f, 1.0f, 0.05f }, { 0.0f, 0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f }, 0xFF0002 }, // Y-Axis (Green)
+        { { 0.05f, 0.05f, 1.0f }, { 0.0f, 0.0f, 0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f }, 0xFF0003 }  // Z-Axis (Blue)
     };
 
     int nGizmoIdxStart = 1000;
@@ -101,7 +101,11 @@ void CGizmo::DrawAxes(ID3D12GraphicsCommandList* pCommandList, CGameObject* pSel
         }
         else
         {
-            cb.objectColorID = { 0, 0, 0, 0 };
+            UINT nID = axes[i].nPickedID;
+            cb.objectColorID.x = (nID & 0xFF) / 255.0f;
+            cb.objectColorID.y = ((nID >> 8) & 0xFF) / 255.0f;
+            cb.objectColorID.z = ((nID >> 16) & 0xFF) / 255.0f;
+            cb.objectColorID.w = 1.0f;
             cb.meshColor = axes[i].vColor;
 
             if (pCB)

@@ -96,9 +96,6 @@
     <ClInclude Include="PickingSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PickingRenderTarget.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Gizmo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -203,9 +200,6 @@
     <ClCompile Include="PickingSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PickingRenderTarget.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Gizmo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -246,6 +240,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GizmoPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -335,10 +332,19 @@
     <None Include="res\MFCEngine.rc2">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="shaders.hlsl">
+    <None Include="Geometry.hlsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Picking.hlsl">
+    <None Include="Lighting.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="DebugGBuffer.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Gizmo.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Unlit.hlsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

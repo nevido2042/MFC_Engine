@@ -93,17 +93,18 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
     // Transition Main SwapChain to Render Target (was done in PrepareRender before)
     commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(rtv, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-    RenderContext context = {
-        commandList,
-        pScene.get(),
-        m_pMainSwapChain.get(),
-        m_pGBuffer.get(),
-        m_pConstantBuffer.get(),
-        pGizmo,
-        pSelectedObj.get(),
-        m_nWidth,
-        m_nHeight
-    };
+    RenderContext context = {};
+    context.pCommandList = commandList;
+    context.pCB = m_pConstantBuffer.get();
+    context.nWidth = m_nWidth;
+    context.nHeight = m_nHeight;
+
+    context.scene.pScene = pScene.get();
+    context.scene.pSelectedObj = pSelectedObj.get();
+
+    context.resources.pMainSwapChain = m_pMainSwapChain.get();
+    context.resources.pGBuffer = m_pGBuffer.get();
+    context.resources.pGizmo = pGizmo;
 
     // Pass 1: Geometry Pass
     m_pGeometryPass->Execute(context);
@@ -147,17 +148,14 @@ void CGraphicsEngine::RenderDebugGBuffers()
     const float clearColor[] = { 0.1f, 0.1f, 0.1f, 1.0f };
     commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
-    RenderContext context = {
-        commandList,
-        nullptr,
-        m_pDebugSwapChain.get(),
-        m_pGBuffer.get(),
-        m_pConstantBuffer.get(),
-        nullptr,
-        nullptr,
-        m_nWidth,
-        m_nHeight
-    };
+    RenderContext context = {};
+    context.pCommandList = commandList;
+    context.pCB = m_pConstantBuffer.get();
+    context.nWidth = m_nWidth;
+    context.nHeight = m_nHeight;
+
+    context.resources.pMainSwapChain = m_pDebugSwapChain.get();
+    context.resources.pGBuffer = m_pGBuffer.get();
 
     m_pDebugPass->Execute(context);
 

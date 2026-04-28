@@ -60,10 +60,10 @@ void CLightingPass::Initialize(ID3D12Device* pDevice)
     compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
-    if (FAILED(D3DCompileFromFile(L"Lighting.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vs, &error))) {
+    if (FAILED(D3DCompileFromFile(L"Lighting.hlsl", nullptr, nullptr, "VSMain", "vs_5_1", compileFlags, 0, &vs, &error))) {
         if (error) OutputDebugStringA((char*)error->GetBufferPointer());
     }
-    if (FAILED(D3DCompileFromFile(L"Lighting.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &ps, &error))) {
+    if (FAILED(D3DCompileFromFile(L"Lighting.hlsl", nullptr, nullptr, "PSMain", "ps_5_1", compileFlags, 0, &ps, &error))) {
         if (error) OutputDebugStringA((char*)error->GetBufferPointer());
     }
 
@@ -105,9 +105,9 @@ void CLightingPass::Initialize(ID3D12Device* pDevice)
 
 void CLightingPass::Execute(const RenderContext& context)
 {
-    context.pGBuffer->TransitionToShaderResource(context.pCommandList);
+    context.resources.pGBuffer->TransitionToShaderResource(context.pCommandList);
     
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = context.pMainSwapChain->GetRtvHandle();
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = context.resources.pMainSwapChain->GetRtvHandle();
     context.pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
     
     const float clearColor[] = { 0.1f, 0.1f, 0.1f, 1.0f };
@@ -118,11 +118,11 @@ void CLightingPass::Execute(const RenderContext& context)
     context.pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     // Setup Lighting constants
-    SceneConstantBuffer cb = {};
+    LightConstantBuffer cb = {};
     std::shared_ptr<CLight> pMainLight = nullptr;
-    if (context.pScene)
+    if (context.scene.pScene)
     {
-        for (auto& pObj : context.pScene->GetGameObjects())
+        for (auto& pObj : context.scene.pScene->GetGameObjects())
         {
             auto pLight = pObj->GetComponent<CLight>();
             if (pLight)
@@ -151,9 +151,9 @@ void CLightingPass::Execute(const RenderContext& context)
     context.pCB->Update(1023, &cb, sizeof(cb));
     context.pCommandList->SetGraphicsRootConstantBufferView(0, context.pCB->GetGPUVirtualAddress(1023));
 
-    ID3D12DescriptorHeap* descriptorHeaps[] = { context.pGBuffer->GetSrvHeap() };
+    ID3D12DescriptorHeap* descriptorHeaps[] = { context.resources.pGBuffer->GetSrvHeap() };
     context.pCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-    context.pCommandList->SetGraphicsRootDescriptorTable(1, context.pGBuffer->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
+    context.pCommandList->SetGraphicsRootDescriptorTable(1, context.resources.pGBuffer->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
 
     context.pCommandList->DrawInstanced(3, 1, 0, 0);
 }

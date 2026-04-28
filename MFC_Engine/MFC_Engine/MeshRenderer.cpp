@@ -49,7 +49,12 @@ void CMeshRenderer::Render(ID3D12GraphicsCommandList* pCommandList, int& objInde
         SceneConstantBuffer cb = {};
         DirectX::XMStoreFloat4x4(&cb.matWVP, DirectX::XMMatrixTranspose(matWVP));
         DirectX::XMStoreFloat4x4(&cb.matWorld, DirectX::XMMatrixTranspose(matWorld));
-        cb.objectColorID = { 0.0f, 0.0f, 0.0f, 0.0f };
+        // Encode Object ID for Picking
+        UINT nID = pOwner->GetID();
+        cb.objectColorID.x = (nID & 0xFF) / 255.0f;
+        cb.objectColorID.y = ((nID >> 8) & 0xFF) / 255.0f;
+        cb.objectColorID.z = ((nID >> 16) & 0xFF) / 255.0f;
+        cb.objectColorID.w = 1.0f;
         cb.meshColor = { 0.0f, 0.0f, 0.0f, 0.0f }; 
 
         if (pCB)

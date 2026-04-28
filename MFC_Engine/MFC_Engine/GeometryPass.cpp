@@ -39,10 +39,10 @@ void CGeometryPass::Initialize(ID3D12Device* pDevice)
     compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
-    if (FAILED(D3DCompileFromFile(L"Deferred.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vs, &error))) {
+    if (FAILED(D3DCompileFromFile(L"Geometry.hlsl", nullptr, nullptr, "VSMain", "vs_5_1", compileFlags, 0, &vs, &error))) {
         if (error) OutputDebugStringA((char*)error->GetBufferPointer());
     }
-    if (FAILED(D3DCompileFromFile(L"Deferred.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &ps, &error))) {
+    if (FAILED(D3DCompileFromFile(L"Geometry.hlsl", nullptr, nullptr, "PSMain", "ps_5_1", compileFlags, 0, &ps, &error))) {
         if (error) OutputDebugStringA((char*)error->GetBufferPointer());
     }
 
@@ -85,10 +85,11 @@ void CGeometryPass::Initialize(ID3D12Device* pDevice)
     psoDesc.DepthStencilState.StencilEnable = FALSE;
     psoDesc.SampleMask = UINT_MAX;
     psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    psoDesc.NumRenderTargets = 3;
+    psoDesc.NumRenderTargets = 4;
     psoDesc.RTVFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT;
     psoDesc.RTVFormats[1] = DXGI_FORMAT_R16G16B16A16_FLOAT;
     psoDesc.RTVFormats[2] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.RTVFormats[3] = DXGI_FORMAT_R8G8B8A8_UNORM;
     psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
     psoDesc.SampleDesc.Count = 1;
 
@@ -97,26 +98,28 @@ void CGeometryPass::Initialize(ID3D12Device* pDevice)
 
 void CGeometryPass::Execute(const RenderContext& context)
 {
-    context.pGBuffer->TransitionToRenderTarget(context.pCommandList);
-    context.pGBuffer->ClearAndSet(context.pCommandList);
+    context.resources.pGBuffer->TransitionToRenderTarget(context.pCommandList);
+    context.resources.pGBuffer->ClearAndSet(context.pCommandList);
 
     context.pCommandList->SetPipelineState(m_pipelineState.Get());
     context.pCommandList->SetGraphicsRootSignature(m_rootSignature.Get());
     context.pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     // Set Viewport and Scissor for Main View
-    context.pCommandList->RSSetViewports(1, &context.pMainSwapChain->GetViewport());
-    context.pCommandList->RSSetScissorRects(1, &context.pMainSwapChain->GetScissorRect());
+    context.pCommandList->RSSetViewports(1, &context.resources.pMainSwapChain->GetViewport());
+    context.pCommandList->RSSetScissorRects(1, &context.resources.pMainSwapChain->GetScissorRect());
 
-    if (context.pScene)
+    if (context.scene.pScene)
     {
-        const auto& gameObjects = context.pScene->GetGameObjects();
+        const auto& gameObjects = context.scene.pScene->GetGameObjects();
         
         int objIndex = 0;
         for (auto& pObj : gameObjects)
         {
             pObj->Render(context.pCommandList, objIndex, context.pCB, context.nWidth, context.nHeight);
         }
+
+        context.resources.pGBuffer->TransitionToShaderResource(context.pCommandList);
     }
     else
     {
