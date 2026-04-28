@@ -22,8 +22,11 @@ void CGizmo::Initialize(ID3D12Device* pDevice)
     m_pDevice = pDevice;
 }
 
-void CGizmo::Render(ID3D12GraphicsCommandList* pCommandList, CGameObject* pSelectedObj, int nWidth, int nHeight, CConstantBuffer* pCB)
+void CGizmo::Render(ID3D12GraphicsCommandList* pCommandList, ID3D12PipelineState* pPSO, ID3D12RootSignature* pRootSignature, CGameObject* pSelectedObj, int nWidth, int nHeight, CConstantBuffer* pCB)
 {
+    if (pPSO) pCommandList->SetPipelineState(pPSO);
+    if (pRootSignature) pCommandList->SetGraphicsRootSignature(pRootSignature);
+    
     DrawAxes(pCommandList, pSelectedObj, nWidth, nHeight, false, pCB, nullptr, nullptr);
 }
 

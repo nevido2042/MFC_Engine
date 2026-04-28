@@ -54,7 +54,6 @@ private:
     void CreateConstantBuffer();    // 상수 버퍼 생성
 
     void RenderGameObject(std::shared_ptr<class CGameObject> pObj, int& objIndex, class CLight* pLight);
-    void RenderGizmo(class CGizmo* pGizmo, std::shared_ptr<class CGameObject> pSelectedObj);
 
 private:
     // --- DX12 핵심 장치 ---

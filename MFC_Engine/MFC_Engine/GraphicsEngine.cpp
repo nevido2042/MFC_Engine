@@ -403,9 +403,9 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
     // ==========================================
     // Pass 3: Forward Rendering (Gizmos)
     // ==========================================
-    if (pScene)
+    if (pScene && pGizmo && pSelectedObj)
     {
-        RenderGizmo(pGizmo, pSelectedObj);
+        pGizmo->Render(commandList, m_pipelineStateGizmo.Get(), m_rootSignatureDeferred.Get(), pSelectedObj.get(), m_nWidth, m_nHeight, m_pConstantBuffer.get());
     }
 
     // Transition Main SwapChain back to Present
@@ -581,17 +581,4 @@ void CGraphicsEngine::RenderGameObject(std::shared_ptr<CGameObject> pObj, int& o
 
 
 
-void CGraphicsEngine::RenderGizmo(CGizmo* pGizmo, std::shared_ptr<CGameObject> pSelectedObj)
-{
-    if (pGizmo && pSelectedObj)
-    {
-        auto commandList = m_pDevice->GetCommandList();
-        
-        // 기즈모 전용 PSO 설정 (깊이 테스트 무시)
-        commandList->SetPipelineState(m_pipelineStateGizmo.Get());
-        commandList->SetGraphicsRootSignature(m_rootSignatureDeferred.Get());
-        
-        pGizmo->Render(commandList, pSelectedObj.get(), m_nWidth, m_nHeight, m_pConstantBuffer.get());
-    }
-}
 
