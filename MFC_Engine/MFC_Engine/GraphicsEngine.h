@@ -48,7 +48,7 @@ private:
     void CreatePipelineState();     // 그래픽 파이프라인 상태(PSO) 생성
     void CreateConstantBuffer();    // 상수 버퍼 생성
 
-    void RenderGameObject(std::shared_ptr<class CGameObject> pObj, int& objIndex);
+    void RenderGameObject(std::shared_ptr<class CGameObject> pObj, int& objIndex, class CLight* pLight);
     void RenderGizmo(class CGizmo* pGizmo, std::shared_ptr<class CGameObject> pSelectedObj);
     void WaitForPreviousFrame();
 

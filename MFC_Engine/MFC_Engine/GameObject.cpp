@@ -2,6 +2,7 @@
 #include "GameObject.h"
 #include <algorithm>
 #include "StringUtil.h"
+#include "Light.h"
 
 UINT CGameObject::s_nNextID = 1;
 
@@ -109,6 +110,10 @@ void CGameObject::Deserialize(const nlohmann::json& j)
             else if (type == "CMeshRenderer")
             {
                 newComp = std::make_shared<CMeshRenderer>(this);
+            }
+            else if (type == "Light")
+            {
+                newComp = std::make_shared<CLight>(this);
             }
 
             if (newComp)

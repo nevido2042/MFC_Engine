@@ -7,6 +7,7 @@
 #include "MFC_Engine.h"
 #include "MeshFilter.h"
 #include "MeshRenderer.h"
+#include "Light.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -43,6 +44,7 @@ BEGIN_MESSAGE_MAP(CInspectorView, CDockablePane)
 	ON_WM_CONTEXTMENU()
 	ON_COMMAND(ID_INSPECTOR_ADD_MESH_FILTER, OnAddMeshFilter)
 	ON_COMMAND(ID_INSPECTOR_ADD_MESH_RENDERER, OnAddMeshRenderer)
+	ON_COMMAND(ID_INSPECTOR_ADD_LIGHT, OnAddLight)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -236,6 +238,38 @@ void CInspectorView::InitPropList()
 		m_wndPropList.AddProperty(pGroup);
 		pGroup->Expand(TRUE);
 	}
+
+	// --- Light ---
+	auto light = m_pSelectedObj->GetComponent<CLight>();
+	if (light)
+	{
+		CMFCPropertyGridProperty* pGroup = new CMFCPropertyGridProperty(_T("Light"));
+		
+		CMFCPropertyGridProperty* pType = new CMFCPropertyGridProperty(_T("Type"), 
+			light->m_eLightType == ELightType::Directional ? _T("Directional") : _T("Point"), 
+			_T("Select Light Type"));
+		pType->AddOption(_T("Directional"));
+		pType->AddOption(_T("Point"));
+		pType->AllowEdit(FALSE);
+		pGroup->AddSubItem(pType);
+
+		CMFCPropertyGridColorProperty* pColor = new CMFCPropertyGridColorProperty(
+			_T("Light Color"),
+			RGB((BYTE)(light->m_vLightColor.x * 255), (BYTE)(light->m_vLightColor.y * 255), (BYTE)(light->m_vLightColor.z * 255)),
+			nullptr,
+			_T("Specify light color"));
+		pGroup->AddSubItem(pColor);
+
+		CMFCPropertyGridColorProperty* pAmbient = new CMFCPropertyGridColorProperty(
+			_T("Ambient Color"),
+			RGB((BYTE)(light->m_vAmbientColor.x * 255), (BYTE)(light->m_vAmbientColor.y * 255), (BYTE)(light->m_vAmbientColor.z * 255)),
+			nullptr,
+			_T("Specify ambient color"));
+		pGroup->AddSubItem(pAmbient);
+
+		m_wndPropList.AddProperty(pGroup);
+		pGroup->Expand(TRUE);
+	}
 }
 
 LRESULT CInspectorView::OnPropertyChanged(WPARAM, LPARAM lParam)
@@ -288,6 +322,36 @@ LRESULT CInspectorView::OnPropertyChanged(WPARAM, LPARAM lParam)
 		meshRenderer->m_bIsEnabled = (bool)value;
 	}
 
+	// Light
+	auto light = m_pSelectedObj->GetComponent<CLight>();
+	if (light)
+	{
+		if (name == _T("Type"))
+		{
+			CString typeStr = (LPCTSTR)(_bstr_t)value;
+			if (typeStr == _T("Directional")) light->m_eLightType = ELightType::Directional;
+			else if (typeStr == _T("Point")) light->m_eLightType = ELightType::Point;
+		}
+		else if (name == _T("Light Color"))
+		{
+			CMFCPropertyGridColorProperty* pColorProp = (CMFCPropertyGridColorProperty*)pProp;
+			COLORREF col = pColorProp->GetColor();
+			light->m_vLightColor.x = GetRValue(col) / 255.0f;
+			light->m_vLightColor.y = GetGValue(col) / 255.0f;
+			light->m_vLightColor.z = GetBValue(col) / 255.0f;
+			light->m_vLightColor.w = 1.0f;
+		}
+		else if (name == _T("Ambient Color"))
+		{
+			CMFCPropertyGridColorProperty* pColorProp = (CMFCPropertyGridColorProperty*)pProp;
+			COLORREF col = pColorProp->GetColor();
+			light->m_vAmbientColor.x = GetRValue(col) / 255.0f;
+			light->m_vAmbientColor.y = GetGValue(col) / 255.0f;
+			light->m_vAmbientColor.z = GetBValue(col) / 255.0f;
+			light->m_vAmbientColor.w = 1.0f;
+		}
+	}
+
 	return 0;
 }
 
@@ -333,6 +397,7 @@ void CInspectorView::OnContextMenu(CWnd* pWnd, CPoint point)
 	menu.CreatePopupMenu();
 	menu.AppendMenu(MF_STRING, ID_INSPECTOR_ADD_MESH_FILTER, _T("Add Mesh Filter"));
 	menu.AppendMenu(MF_STRING, ID_INSPECTOR_ADD_MESH_RENDERER, _T("Add Mesh Renderer"));
+	menu.AppendMenu(MF_STRING, ID_INSPECTOR_ADD_LIGHT, _T("Add Light"));
 
 	menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 }
@@ -351,6 +416,15 @@ void CInspectorView::OnAddMeshRenderer()
 	if (m_pSelectedObj && !m_pSelectedObj->GetComponent<CMeshRenderer>())
 	{
 		m_pSelectedObj->AddComponent<CMeshRenderer>();
+		InitPropList();
+	}
+}
+
+void CInspectorView::OnAddLight()
+{
+	if (m_pSelectedObj && !m_pSelectedObj->GetComponent<CLight>())
+	{
+		m_pSelectedObj->AddComponent<CLight>();
 		InitPropList();
 	}
 }

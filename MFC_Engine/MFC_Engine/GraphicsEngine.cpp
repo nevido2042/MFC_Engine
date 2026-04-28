@@ -5,6 +5,7 @@
 #include "MeshFilter.h"
 #include "MeshRenderer.h"
 #include "Mesh.h"
+#include "Light.h"
 #include "PickingSystem.h"
 #include "SceneManager.h"
 #include "Gizmo.h"
@@ -95,7 +96,8 @@ void CGraphicsEngine::CreatePipelineState()
     D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
 
     // 파이프라인 상태 객체(PSO) 상세 설정 (Raw Struct 직접 채우기)
@@ -182,10 +184,23 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
     if (pScene)
     {
         const auto& gameObjects = pScene->GetGameObjects();
+        
+        // Find main light
+        std::shared_ptr<CLight> pMainLight = nullptr;
+        for (auto& pObj : gameObjects)
+        {
+            auto pLight = pObj->GetComponent<CLight>();
+            if (pLight)
+            {
+                pMainLight = pLight;
+                break;
+            }
+        }
+
         int objIndex = 0;
         for (auto& pObj : gameObjects)
         {
-            RenderGameObject(pObj, objIndex);
+            RenderGameObject(pObj, objIndex, pMainLight.get());
         }
 
         // 기즈모 렌더링 (씬 오브젝트 다음)
@@ -240,7 +255,7 @@ void CGraphicsEngine::Resize(int width, int height)
 
 
 
-void CGraphicsEngine::RenderGameObject(std::shared_ptr<CGameObject> pObj, int& objIndex)
+void CGraphicsEngine::RenderGameObject(std::shared_ptr<CGameObject> pObj, int& objIndex, CLight* pLight)
 {
     if (objIndex >= 1024) return;
 
@@ -270,8 +285,27 @@ void CGraphicsEngine::RenderGameObject(std::shared_ptr<CGameObject> pObj, int& o
                 // 상수 버퍼 업데이트
                 SceneConstantBuffer cb = {};
                 DirectX::XMStoreFloat4x4(&cb.matWVP, DirectX::XMMatrixTranspose(matWVP));
+                DirectX::XMStoreFloat4x4(&cb.matWorld, DirectX::XMMatrixTranspose(matWorld));
                 cb.objectColorID = { 0.0f, 0.0f, 0.0f, 0.0f };
                 cb.meshColor = { 0.0f, 0.0f, 0.0f, 0.0f }; // 기본적으로 무시
+
+                if (pLight)
+                {
+                    // 빛의 방향은 Transform의 Rotation에 의해 결정되는 전방 벡터(Z축) 사용
+                    DirectX::XMMATRIX lightWorld = pLight->GetOwner()->GetTransform()->GetWorldMatrix();
+                    DirectX::XMVECTOR lightForward = DirectX::XMVector3Normalize(lightWorld.r[2]);
+                    DirectX::XMStoreFloat4(&cb.lightDir, lightForward);
+                    cb.lightColor = pLight->m_vLightColor;
+                    cb.ambientColor = pLight->m_vAmbientColor;
+                }
+                else
+                {
+                    // 기본 빛
+                    cb.lightDir = { 0.0f, -1.0f, 1.0f, 0.0f };
+                    cb.lightColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+                    cb.ambientColor = { 0.2f, 0.2f, 0.2f, 1.0f };
+                }
+
                 m_pConstantBuffer->Update(objIndex, &cb, sizeof(cb));
 
                 // 해당 오브젝트의 CBV 연결 및 그리기
@@ -291,7 +325,7 @@ void CGraphicsEngine::RenderGameObject(std::shared_ptr<CGameObject> pObj, int& o
     // 자식들도 렌더링
     for (auto& pChild : pObj->GetChildren())
     {
-        RenderGameObject(pChild, objIndex);
+        RenderGameObject(pChild, objIndex, pLight);
     }
 }
 

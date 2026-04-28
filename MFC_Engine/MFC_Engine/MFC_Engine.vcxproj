@@ -224,6 +224,7 @@
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="Device.h" />
     <ClInclude Include="Gizmo.h" />
+    <ClInclude Include="Light.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HierarchyView.cpp" />
@@ -248,6 +249,7 @@
     <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="SceneSerializer.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Light.cpp" />
     <ClCompile Include="PrimitiveGenerator.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Transform.cpp" />
