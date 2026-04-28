@@ -127,6 +127,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_wndConsoleView.EnableDocking(CBRS_ALIGN_ANY);
 	m_wndSceneView.EnableDocking(CBRS_ALIGN_ANY);
 	m_wndGameView.EnableDocking(CBRS_ALIGN_ANY);
+	m_wndGBufferView.EnableDocking(CBRS_ALIGN_ANY);
 
 	// 1. 좌측에 Hierarchy 배치
 	DockPane(&m_wndHierarchyView);
@@ -153,6 +154,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	DockPane(&m_wndGameView);
 	//ControlBarToTabbedDocument(&m_wndGameView);
 
+	DockPane(&m_wndGBufferView);
+	// m_wndGBufferView.AttachToTabWnd(&m_wndGameView, DM_SHOW, TRUE, &pTabbedBar);
 
 	// 보관된 값에 따라 비주얼 관리자 및 스타일을 설정합니다.
 	OnApplicationLook(theApp.m_nAppLook);
@@ -248,6 +251,14 @@ BOOL CMainFrame::CreateDockingWindows()
 		TRACE0("Game 창을 만들지 못했습니다.\n");
 		return FALSE;
 	}
+
+	// G-Buffer Debug View
+	if (!m_wndGBufferView.Create(_T("G-Buffer Debug"), this, CRect(0, 0, 800, 600), TRUE, ID_VIEW_CLASSVIEW + 12, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_TOP | CBRS_FLOAT_MULTI))
+	{
+		TRACE0("G-Buffer Debug 창을 만들지 못했습니다.\n");
+		return FALSE;
+	}
+	m_wndGBufferView.SetEngine(m_wndSceneView.GetEngine());
 
 	// Console
 	if (!m_wndConsoleView.Create(_T("Console"), this, CRect(0, 0, 100, 100), TRUE, ID_VIEW_OUTPUTWND, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_BOTTOM | CBRS_FLOAT_MULTI))

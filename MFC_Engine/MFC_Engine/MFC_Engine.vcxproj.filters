@@ -1,228 +1,239 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="소스 파일">
+    <Filter Include="?�스 ?�일">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="헤더 파일">
+    <Filter Include="?�더 ?�일">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="리소스 파일">
+    <Filter Include="리소???�일">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MFC_Engine.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="framework.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="MainFrm.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="SceneManager.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="ProjectView.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="HierarchyView.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="ViewTree.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="ConsoleView.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="InspectorView.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="SceneView.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="GameView.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="GBufferView.h">
+      <Filter>View</Filter>
+    </ClInclude>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="GraphicsEngine.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="GameObject.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="Component.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="Transform.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="Scene.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="SceneSerializer.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="json.hpp">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="Camera.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="MeshFilter.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
     <ClInclude Include="MeshRenderer.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>?�더 ?�일</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MFC_Engine.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="MainFrm.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="ProjectView.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="HierarchyView.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="ViewTree.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="ConsoleView.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="InspectorView.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="SceneView.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="GameView.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="GBufferView.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="GraphicsEngine.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="GameObject.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="Scene.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="SceneManager.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="SceneSerializer.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>?�스 ?�일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MFCEngine.rc">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\file_view.ico">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\file_view_hc.ico">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\class_view.ico">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\class_view_hc.ico">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\fileview.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\fileview_hc.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\classview.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\classview_hc.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\explorer.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\explorer_hc.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\sort.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\sort_hc.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\menuimages.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\menuimages_hc.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\output_wnd.ico">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\output_wnd_hc.ico">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\properties_wnd.ico">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\properties_wnd_hc.ico">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\properties.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\properties_hc.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\userimages.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\MFC_EngineDoc.ico">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\MFC_Engine.ico">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\Toolbar.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
     <Image Include="res\Toolbar256.bmp">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\MFCEngine.rc2">
-      <Filter>리소스 파일</Filter>
+      <Filter>리소???�일</Filter>
     </None>
   </ItemGroup>
 </Project>
+

@@ -9,6 +9,7 @@
 #include "InspectorView.h"
 #include "SceneView.h"
 #include "GameView.h"
+#include "GBufferView.h"
 class CMainFrame : public CMDIFrameWndEx
 {
 	DECLARE_DYNAMIC(CMainFrame)
@@ -51,6 +52,7 @@ protected:  // 컨트롤 모음이 포함된 멤버입니다.
 	CInspectorView    m_wndInspectorView;
 	CSceneView        m_wndSceneView;
 	CGameView         m_wndGameView;
+	CGBufferView      m_wndGBufferView;
 
 // 생성된 메시지 맵 함수
 protected:

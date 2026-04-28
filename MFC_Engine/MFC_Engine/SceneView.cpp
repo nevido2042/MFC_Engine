@@ -286,6 +286,11 @@ void CSceneView::RenderLoop()
         {
             ProcessInput(deltaTime);
             m_pEngine->Render(CSceneManager::GetInstance().GetActiveScene(), GetSelectedGameObject(), m_pGizmo.get());
+            
+            if (m_pEngine->IsDebugViewActive())
+            {
+                m_pEngine->RenderDebugGBuffers();
+            }
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1));

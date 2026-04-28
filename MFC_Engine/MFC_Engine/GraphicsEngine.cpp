@@ -39,7 +39,7 @@ bool CGraphicsEngine::Initialize(HWND hWnd, int width, int height)
     CreateRootSignature();
     CreatePipelineState();
 
-    CPickingSystem::GetInstance().Initialize(m_pDevice->GetDevice(), m_rootSignature, m_nWidth, m_nHeight);
+    CPickingSystem::GetInstance().Initialize(m_pDevice->GetDevice(), m_rootSignatureDeferred, m_nWidth, m_nHeight);
     CPrimitiveGenerator::GetInstance().Initialize(m_pDevice->GetDevice());
     CreateConstantBuffer();
 
@@ -53,14 +53,13 @@ bool CGraphicsEngine::Initialize(HWND hWnd, int width, int height)
  */
 void CGraphicsEngine::CreateRootSignature()
 {
-    // 상수 버퍼를 위한 루트 파라미터 정의
+    // 1. Deferred Root Signature (Geometry Pass)
     D3D12_ROOT_PARAMETER rootParameters[1];
     rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
     rootParameters[0].Descriptor.ShaderRegister = 0;
     rootParameters[0].Descriptor.RegisterSpace = 0;
     rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
-    // 기본 루트 시그니처 구조체 직접 작성
     D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
     rootSignatureDesc.NumParameters = 1;
     rootSignatureDesc.pParameters = rootParameters;
@@ -71,7 +70,62 @@ void CGraphicsEngine::CreateRootSignature()
     ComPtr<ID3DBlob> signature;
     ComPtr<ID3DBlob> error;
     ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
-    ThrowIfFailed(m_pDevice->GetDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)));
+    ThrowIfFailed(m_pDevice->GetDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignatureDeferred)));
+
+    // 2. Lighting Root Signature
+    D3D12_DESCRIPTOR_RANGE srvTable;
+    srvTable.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    srvTable.NumDescriptors = 3;
+    srvTable.BaseShaderRegister = 0;
+    srvTable.RegisterSpace = 0;
+    srvTable.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+    D3D12_ROOT_PARAMETER lightRootParameters[2];
+    lightRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    lightRootParameters[0].Descriptor.ShaderRegister = 0;
+    lightRootParameters[0].Descriptor.RegisterSpace = 0;
+    lightRootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+    lightRootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    lightRootParameters[1].DescriptorTable.NumDescriptorRanges = 1;
+    lightRootParameters[1].DescriptorTable.pDescriptorRanges = &srvTable;
+    lightRootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+    D3D12_STATIC_SAMPLER_DESC samplerDesc = {};
+    samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+    samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    samplerDesc.MipLODBias = 0.0f;
+    samplerDesc.MaxAnisotropy = 1;
+    samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+    samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+    samplerDesc.MinLOD = 0.0f;
+    samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
+    samplerDesc.ShaderRegister = 0;
+    samplerDesc.RegisterSpace = 0;
+    samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+    D3D12_ROOT_SIGNATURE_DESC lightRootSigDesc = {};
+    lightRootSigDesc.NumParameters = 2;
+    lightRootSigDesc.pParameters = lightRootParameters;
+    lightRootSigDesc.NumStaticSamplers = 1;
+    lightRootSigDesc.pStaticSamplers = &samplerDesc;
+    lightRootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+    ThrowIfFailed(D3D12SerializeRootSignature(&lightRootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+    ThrowIfFailed(m_pDevice->GetDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignatureLighting)));
+
+    // 3. Debug Root Signature (No Constant Buffer needed)
+    D3D12_ROOT_SIGNATURE_DESC debugRootSigDesc = {};
+    debugRootSigDesc.NumParameters = 1;
+    debugRootSigDesc.pParameters = &lightRootParameters[1];
+    debugRootSigDesc.NumStaticSamplers = 1;
+    debugRootSigDesc.pStaticSamplers = &samplerDesc;
+    debugRootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+    ThrowIfFailed(D3D12SerializeRootSignature(&debugRootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+    ThrowIfFailed(m_pDevice->GetDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignatureDebug)));
 }
 
 /**
@@ -79,8 +133,10 @@ void CGraphicsEngine::CreateRootSignature()
  */
 void CGraphicsEngine::CreatePipelineState()
 {
-    ComPtr<ID3DBlob> vertexShader;
-    ComPtr<ID3DBlob> pixelShader;
+    ComPtr<ID3DBlob> deferredVS, deferredPS;
+    ComPtr<ID3DBlob> lightingVS, lightingPS;
+    ComPtr<ID3DBlob> debugVS, debugPS;
+    ComPtr<ID3DBlob> error;
 
 #if defined(_DEBUG)
     UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -88,11 +144,31 @@ void CGraphicsEngine::CreatePipelineState()
     UINT compileFlags = 0;
 #endif
 
-    // 쉐이더 파일 컴파일
-    ThrowIfFailed(D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
-    ThrowIfFailed(D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+    // Deferred Pass Shaders
+    if (FAILED(D3DCompileFromFile(L"Deferred.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &deferredVS, &error))) {
+        OutputDebugStringA((char*)error->GetBufferPointer());
+    }
+    if (FAILED(D3DCompileFromFile(L"Deferred.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &deferredPS, &error))) {
+        OutputDebugStringA((char*)error->GetBufferPointer());
+    }
 
-    // 입력 레이아웃 정의
+    // Lighting Pass Shaders
+    if (FAILED(D3DCompileFromFile(L"Lighting.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &lightingVS, &error))) {
+        OutputDebugStringA((char*)error->GetBufferPointer());
+    }
+    if (FAILED(D3DCompileFromFile(L"Lighting.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &lightingPS, &error))) {
+        OutputDebugStringA((char*)error->GetBufferPointer());
+    }
+
+    // Debug Pass Shaders
+    if (FAILED(D3DCompileFromFile(L"DebugGBuffer.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &debugVS, &error))) {
+        OutputDebugStringA((char*)error->GetBufferPointer());
+    }
+    if (FAILED(D3DCompileFromFile(L"DebugGBuffer.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &debugPS, &error))) {
+        OutputDebugStringA((char*)error->GetBufferPointer());
+    }
+
+    // 입력 레이아웃 정의 (Geometry Pass용)
     D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -100,14 +176,12 @@ void CGraphicsEngine::CreatePipelineState()
         { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
 
-    // 파이프라인 상태 객체(PSO) 상세 설정 (Raw Struct 직접 채우기)
+    // 1. Deferred Pipeline State (Geometry Pass)
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
     psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
-    psoDesc.pRootSignature = m_rootSignature.Get();
-    psoDesc.VS = { vertexShader->GetBufferPointer(), vertexShader->GetBufferSize() };
-    psoDesc.PS = { pixelShader->GetBufferPointer(), pixelShader->GetBufferSize() };
-    
-    // 기본 래스터라이저 설정
+    psoDesc.pRootSignature = m_rootSignatureDeferred.Get();
+    psoDesc.VS = { deferredVS->GetBufferPointer(), deferredVS->GetBufferSize() };
+    psoDesc.PS = { deferredPS->GetBufferPointer(), deferredPS->GetBufferSize() };
     psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
     psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
     psoDesc.RasterizerState.FrontCounterClockwise = FALSE;
@@ -119,8 +193,6 @@ void CGraphicsEngine::CreatePipelineState()
     psoDesc.RasterizerState.AntialiasedLineEnable = FALSE;
     psoDesc.RasterizerState.ForcedSampleCount = 0;
     psoDesc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
-
-    // 기본 블렌드 설정
     psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
     psoDesc.BlendState.IndependentBlendEnable = FALSE;
     const D3D12_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
@@ -133,26 +205,53 @@ void CGraphicsEngine::CreatePipelineState()
     };
     for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
         psoDesc.BlendState.RenderTarget[i] = defaultRenderTargetBlendDesc;
-
-    // 깊이 스텐실 설정
     psoDesc.DepthStencilState.DepthEnable = TRUE;
     psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
     psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
     psoDesc.DepthStencilState.StencilEnable = FALSE;
-    
     psoDesc.SampleMask = UINT_MAX;
     psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    psoDesc.NumRenderTargets = 1;
-    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    
+    // G-Buffer Render Targets
+    psoDesc.NumRenderTargets = 3;
+    psoDesc.RTVFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT; // Position
+    psoDesc.RTVFormats[1] = DXGI_FORMAT_R16G16B16A16_FLOAT; // Normal
+    psoDesc.RTVFormats[2] = DXGI_FORMAT_R8G8B8A8_UNORM;      // Albedo
     psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
     psoDesc.SampleDesc.Count = 1;
 
-    ThrowIfFailed(m_pDevice->GetDevice()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
+    ThrowIfFailed(m_pDevice->GetDevice()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateDeferred)));
 
-    // --- 기즈모용 PSO 생성 (깊이 테스트 비활성화) ---
+    // --- 기즈모용 PSO ---
     psoDesc.DepthStencilState.DepthEnable = FALSE;
     psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+    psoDesc.NumRenderTargets = 1; // 기즈모는 SwapChain에 그림
+    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.RTVFormats[1] = DXGI_FORMAT_UNKNOWN;
+    psoDesc.RTVFormats[2] = DXGI_FORMAT_UNKNOWN;
     ThrowIfFailed(m_pDevice->GetDevice()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateGizmo)));
+
+    // 2. Lighting Pipeline State
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC lightingPsoDesc = psoDesc;
+    lightingPsoDesc.InputLayout = { nullptr, 0 }; // Full-screen Quad generated in VS
+    lightingPsoDesc.pRootSignature = m_rootSignatureLighting.Get();
+    lightingPsoDesc.VS = { lightingVS->GetBufferPointer(), lightingVS->GetBufferSize() };
+    lightingPsoDesc.PS = { lightingPS->GetBufferPointer(), lightingPS->GetBufferSize() };
+    lightingPsoDesc.DepthStencilState.DepthEnable = FALSE; // No depth test for lighting pass quad
+    lightingPsoDesc.NumRenderTargets = 1;
+    lightingPsoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    lightingPsoDesc.RTVFormats[1] = DXGI_FORMAT_UNKNOWN;
+    lightingPsoDesc.RTVFormats[2] = DXGI_FORMAT_UNKNOWN;
+    
+    ThrowIfFailed(m_pDevice->GetDevice()->CreateGraphicsPipelineState(&lightingPsoDesc, IID_PPV_ARGS(&m_pipelineStateLighting)));
+
+    // 3. Debug G-Buffer Pipeline State
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC debugPsoDesc = lightingPsoDesc;
+    debugPsoDesc.pRootSignature = m_rootSignatureDebug.Get();
+    debugPsoDesc.VS = { debugVS->GetBufferPointer(), debugVS->GetBufferSize() };
+    debugPsoDesc.PS = { debugPS->GetBufferPointer(), debugPS->GetBufferSize() };
+    
+    ThrowIfFailed(m_pDevice->GetDevice()->CreateGraphicsPipelineState(&debugPsoDesc, IID_PPV_ARGS(&m_pipelineStateDebug)));
 }
 
 
@@ -174,19 +273,25 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
     std::lock_guard<std::mutex> lock(m_mutex);
     m_timeManager.Update();
 
-    m_pDevice->PrepareRender();
-    
+    m_pDevice->PrepareRender(); // Clears main DSV, handles SwapChain transitions
     auto commandList = m_pDevice->GetCommandList();
-    commandList->SetPipelineState(m_pipelineState.Get());
-    commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+
+    // ==========================================
+    // Pass 1: Geometry Pass (G-Buffer)
+    // ==========================================
+    m_pDevice->TransitionGBuffersToRenderTarget();
+    m_pDevice->ClearAndSetGBuffers();
+
+    commandList->SetPipelineState(m_pipelineStateDeferred.Get());
+    commandList->SetGraphicsRootSignature(m_rootSignatureDeferred.Get());
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    std::shared_ptr<CLight> pMainLight = nullptr;
 
     if (pScene)
     {
         const auto& gameObjects = pScene->GetGameObjects();
         
-        // Find main light
-        std::shared_ptr<CLight> pMainLight = nullptr;
         for (auto& pObj : gameObjects)
         {
             auto pLight = pObj->GetComponent<CLight>();
@@ -202,9 +307,6 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
         {
             RenderGameObject(pObj, objIndex, pMainLight.get());
         }
-
-        // 기즈모 렌더링 (씬 오브젝트 다음)
-        RenderGizmo(pGizmo, pSelectedObj);
     }
     else
     {
@@ -222,8 +324,9 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
         DirectX::XMMATRIX matProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 100.0f);
         DirectX::XMMATRIX matWVP = matWorld * matView * matProj;
 
-        SceneConstantBuffer cb;
+        SceneConstantBuffer cb = {};
         DirectX::XMStoreFloat4x4(&cb.matWVP, DirectX::XMMatrixTranspose(matWVP));
+        DirectX::XMStoreFloat4x4(&cb.matWorld, DirectX::XMMatrixTranspose(matWorld));
         m_pConstantBuffer->Update(0, &cb, sizeof(cb));
 
         commandList->SetGraphicsRootConstantBufferView(0, m_pConstantBuffer->GetGPUVirtualAddress(0));
@@ -235,7 +338,82 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
         }
     }
 
+    // ==========================================
+    // Pass 2: Lighting Pass
+    // ==========================================
+    m_pDevice->TransitionGBuffersToPixelShaderResource();
+    m_pDevice->SetMainRenderTarget();
+
+    commandList->SetPipelineState(m_pipelineStateLighting.Get());
+    commandList->SetGraphicsRootSignature(m_rootSignatureLighting.Get());
+    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // Setup Lighting constants
+    SceneConstantBuffer cb = {};
+    if (pMainLight)
+    {
+        DirectX::XMMATRIX lightWorld = pMainLight->GetOwner()->GetTransform()->GetWorldMatrix();
+        DirectX::XMVECTOR lightForward = DirectX::XMVector3Normalize(lightWorld.r[2]);
+        DirectX::XMStoreFloat4(&cb.lightDir, lightForward);
+        cb.lightColor = pMainLight->m_vLightColor;
+        cb.ambientColor = pMainLight->m_vAmbientColor;
+    }
+    else
+    {
+        cb.lightDir = { 0.0f, -1.0f, 1.0f, 0.0f };
+        cb.lightColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+        cb.ambientColor = { 0.2f, 0.2f, 0.2f, 1.0f };
+    }
+    
+    // We can reuse objIndex or just an offset. Let's use 1023
+    m_pConstantBuffer->Update(1023, &cb, sizeof(cb));
+    commandList->SetGraphicsRootConstantBufferView(0, m_pConstantBuffer->GetGPUVirtualAddress(1023));
+
+    // Bind SRVs
+    ID3D12DescriptorHeap* descriptorHeaps[] = { m_pDevice->GetGBufferSrvHeap() };
+    commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+    commandList->SetGraphicsRootDescriptorTable(1, m_pDevice->GetGBufferSrvHeap()->GetGPUDescriptorHandleForHeapStart());
+
+    // Draw full-screen quad (3 vertices generated in VS)
+    commandList->DrawInstanced(3, 1, 0, 0);
+
+    // ==========================================
+    // Pass 3: Forward Rendering (Gizmos)
+    // ==========================================
+    if (pScene)
+    {
+        RenderGizmo(pGizmo, pSelectedObj);
+    }
+
     m_pDevice->SubmitRender();
+}
+
+void CGraphicsEngine::RenderDebugGBuffers()
+{
+    if (!m_bIsInitialized) return;
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (!m_pDevice->PrepareDebugRender()) return;
+
+    auto commandList = m_pDevice->GetCommandList();
+
+    // Use Debug Pipeline State
+    commandList->SetPipelineState(m_pipelineStateDebug.Get());
+    commandList->SetGraphicsRootSignature(m_rootSignatureDebug.Get());
+    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // Bind SRVs
+    ID3D12DescriptorHeap* descriptorHeaps[] = { m_pDevice->GetGBufferSrvHeap() };
+    commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+    
+    // The Debug Root Signature expects the SRV table at index 0 because there's no CBV
+    commandList->SetGraphicsRootDescriptorTable(0, m_pDevice->GetGBufferSrvHeap()->GetGPUDescriptorHandleForHeapStart());
+
+    // Draw full-screen quad
+    commandList->DrawInstanced(3, 1, 0, 0);
+
+    m_pDevice->SubmitDebugRender();
 }
 
 void CGraphicsEngine::Resize(int width, int height)
@@ -251,6 +429,22 @@ void CGraphicsEngine::Resize(int width, int height)
 
     m_pDevice->Resize(width, height);
     CPickingSystem::GetInstance().Resize(m_pDevice->GetDevice(), width, height);
+}
+
+bool CGraphicsEngine::InitializeDebugSwapChain(HWND hWnd, int width, int height)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (!m_pDevice) return false;
+    return m_pDevice->InitializeDebugSwapChain(hWnd, width, height);
+}
+
+void CGraphicsEngine::ResizeDebugSwapChain(int width, int height)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_pDevice)
+    {
+        m_pDevice->ResizeDebugSwapChain(width, height);
+    }
 }
 
 
@@ -339,11 +533,9 @@ void CGraphicsEngine::RenderGizmo(CGizmo* pGizmo, std::shared_ptr<CGameObject> p
         
         // 기즈모 전용 PSO 설정 (깊이 테스트 무시)
         commandList->SetPipelineState(m_pipelineStateGizmo.Get());
+        commandList->SetGraphicsRootSignature(m_rootSignatureDeferred.Get());
         
         pGizmo->Render(commandList, pSelectedObj.get(), m_nWidth, m_nHeight, m_pConstantBuffer.get());
-        
-        // 다시 기본 PSO로 복구 (필요한 경우)
-        commandList->SetPipelineState(m_pipelineState.Get());
     }
 }
 

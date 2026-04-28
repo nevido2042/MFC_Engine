@@ -199,6 +199,7 @@
     <ClInclude Include="InspectorView.h" />
     <ClInclude Include="SceneView.h" />
     <ClInclude Include="GameView.h" />
+    <ClInclude Include="GBufferView.h" />
     <ClInclude Include="Resource.h" />
     <None Include="shaders.hlsl" />
     <None Include="Picking.hlsl" />
@@ -241,6 +242,7 @@
     <ClCompile Include="InspectorView.cpp" />
     <ClCompile Include="SceneView.cpp" />
     <ClCompile Include="GameView.cpp" />
+    <ClCompile Include="GBufferView.cpp" />
     <ClCompile Include="TimeManager.cpp" />
     <ClCompile Include="ViewTree.cpp" />
     <ClCompile Include="GraphicsEngine.cpp" />
