@@ -12,6 +12,8 @@
 #include "LightingPass.h"
 #include "DebugPass.h"
 #include "GizmoPass.h"
+// ImGui 로직은 CImGuiManager에서 관리
+class CImGuiManager;
 
 /**
  * @class CGraphicsEngine
@@ -71,6 +73,9 @@ private:
     std::unique_ptr<class CDebugPass> m_pDebugPass;
     
     std::unique_ptr<CConstantBuffer> m_pConstantBuffer; // 상수 버퍼 매니저
+
+    std::unique_ptr<class CImGuiManager> m_pImGuiManager;
+
 
     // --- 동기화 및 상태 변수 ---
     bool m_bIsInitialized;

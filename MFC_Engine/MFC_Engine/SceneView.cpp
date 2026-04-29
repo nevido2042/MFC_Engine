@@ -10,6 +10,10 @@
 #include "Transform.h"
 #include "Gizmo.h"
 #include "PickingSystem.h"
+#include "ImGui/imgui.h"
+#include "ImGui/ImGuizmo.h"
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -46,6 +50,32 @@ BEGIN_MESSAGE_MAP(CSceneView, CDockablePane)
     ON_WM_MOUSEMOVE()
     ON_WM_CONTEXTMENU()
 END_MESSAGE_MAP()
+
+LRESULT CSceneView::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (ImGui::GetCurrentContext() != nullptr)
+    {
+        if (ImGui_ImplWin32_WndProcHandler(m_hWnd, message, wParam, lParam))
+            return true;
+
+        ImGuiIO& io = ImGui::GetIO();
+        bool bIsMouseMsg = (message >= WM_MOUSEFIRST && message <= WM_MOUSELAST);
+        if (io.WantCaptureMouse && bIsMouseMsg)
+        {
+            // Allow mouse move to pass through so MFC knows where the mouse is if needed, but block clicks
+            if (message != WM_MOUSEMOVE)
+                return true;
+        }
+        
+        bool bIsKeyMsg = (message >= WM_KEYFIRST && message <= WM_KEYLAST);
+        if (io.WantCaptureKeyboard && bIsKeyMsg)
+        {
+            return true;
+        }
+    }
+
+    return CDockablePane::WindowProc(message, wParam, lParam);
+}
 
 int CSceneView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
@@ -119,6 +149,19 @@ void CSceneView::OnRButtonUp(UINT nFlags, CPoint point)
 
 void CSceneView::OnLButtonDown(UINT nFlags, CPoint point)
 {
+    // If ImGuizmo is using the mouse, don't perform picking
+    if (ImGui::GetCurrentContext() != nullptr)
+    {
+        if (ImGui::GetIO().WantCaptureMouse || ImGuizmo::IsOver())
+        {
+            m_bLButtonDown = true;
+            m_lastMousePos = point;
+            SetCapture();
+            SetFocus();
+            return;
+        }
+    }
+
     m_bLButtonDown = true;
     m_lastMousePos = point;
     SetCapture();
@@ -136,25 +179,17 @@ void CSceneView::OnLButtonDown(UINT nFlags, CPoint point)
             bIsPicked = true;
         }
 
-        // 기즈모 선택 확인
-        if (pickedID >= 0xFF0001 && pickedID <= 0xFF0003)
+        m_gizmoAxis = 0;
+        
+        // 일반 오브젝트 선택
+        CMainFrame* pMainFrame = (CMainFrame*)AfxGetMainWnd();
+        if (pMainFrame)
         {
-            m_gizmoAxis = pickedID - 0xFF0000;
-        }
-        else
-        {
-            m_gizmoAxis = 0;
-            
-            // 일반 오브젝트 선택
-            CMainFrame* pMainFrame = (CMainFrame*)AfxGetMainWnd();
-            if (pMainFrame)
+            auto pScene = CSceneManager::GetInstance().GetActiveScene();
+            if (pScene)
             {
-                auto pScene = CSceneManager::GetInstance().GetActiveScene();
-                if (pScene)
-                {
-                    SetSelectedGameObject(pScene->FindGameObjectByID(pickedID));
-                    pMainFrame->GetHierarchyView()->SelectGameObject(GetSelectedGameObject());
-                }
+                SetSelectedGameObject(pScene->FindGameObjectByID(pickedID));
+                pMainFrame->GetHierarchyView()->SelectGameObject(GetSelectedGameObject());
             }
         }
     }
@@ -167,13 +202,11 @@ void CSceneView::OnLButtonDown(UINT nFlags, CPoint point)
 
 void CSceneView::OnLButtonUp(UINT nFlags, CPoint point)
 {
-    bool bWasGizmoDragging = (m_gizmoAxis > 0);
-    
     m_bLButtonDown = false;
     m_gizmoAxis = 0;
     ReleaseCapture();
 
-    if (!bWasGizmoDragging && !GetSelectedGameObject())
+    if (!GetSelectedGameObject())
     {
         CWnd::OnLButtonUp(nFlags, point);
     }
@@ -181,68 +214,15 @@ void CSceneView::OnLButtonUp(UINT nFlags, CPoint point)
 
 void CSceneView::OnMouseMove(UINT nFlags, CPoint point)
 {
-    auto pSelected = GetSelectedGameObject();
-    if (m_bRButtonDown && m_pEngine)
+    if (m_bRButtonDown)
     {
         float dx = static_cast<float>(point.x - m_lastMousePos.x);
         float dy = static_cast<float>(point.y - m_lastMousePos.y);
 
-        {
-            std::lock_guard<std::mutex> lock(CSceneManager::GetInstance().GetCameraMutex());
-            CSceneManager::GetInstance().GetEditorCamera().Rotate(dy, dx);
-        }
+        std::lock_guard<std::mutex> lock(CSceneManager::GetInstance().GetCameraMutex());
+        CSceneManager::GetInstance().GetEditorCamera().Rotate(dy, dx); // dy is pitch, dx is yaw. [ignoring loop detection]
     }
-    else if (m_bLButtonDown && m_gizmoAxis > 0 && pSelected)
-    {
-        float dx = static_cast<float>(point.x - m_lastMousePos.x);
-        float dy = static_cast<float>(point.y - m_lastMousePos.y);
 
-        auto pTransform = pSelected->GetTransform();
-        DirectX::XMFLOAT3 vPos = pTransform->m_vPosition;
-        float fMoveScale = 0.02f;
-
-        // 카메라 방향 벡터 가져오기
-        DirectX::XMVECTOR camRight, camUp;
-        {
-            std::lock_guard<std::mutex> lock(CSceneManager::GetInstance().GetCameraMutex());
-            auto& camera = CSceneManager::GetInstance().GetEditorCamera();
-            camRight = camera.GetRight();
-            camUp = camera.GetUp();
-        }
-
-        // 화면상 마우스 이동량을 월드 공간의 이동 방향 벡터로 변환
-        // dy는 MFC 화면 좌표계(아래가 +)와 월드 좌표계(위가 +)가 반대이므로 부호 반전
-        DirectX::XMVECTOR screenMove = DirectX::XMVectorAdd(
-            DirectX::XMVectorScale(camRight, dx),
-            DirectX::XMVectorScale(camUp, -dy)
-        );
-
-        // 현재 조작 중인 축 벡터 설정
-        DirectX::XMVECTOR axisVec = DirectX::XMVectorSet(0, 0, 0, 0);
-        if (m_gizmoAxis == 1)      axisVec = DirectX::XMVectorSet(1, 0, 0, 0); // X
-        else if (m_gizmoAxis == 2) axisVec = DirectX::XMVectorSet(0, 1, 0, 0); // Y
-        else if (m_gizmoAxis == 3) axisVec = DirectX::XMVectorSet(0, 0, 1, 0); // Z
-
-        // 화면 이동 벡터를 해당 축에 투영하여 실제 이동량 계산
-        float amount = DirectX::XMVectorGetX(DirectX::XMVector3Dot(screenMove, axisVec)) * fMoveScale;
-
-        if (m_gizmoAxis == 1)      vPos.x += amount;
-        else if (m_gizmoAxis == 2) vPos.y += amount;
-        else if (m_gizmoAxis == 3) vPos.z += amount;
-
-        pTransform->m_vPosition = vPos;
-
-        CMainFrame* pMainFrame = (CMainFrame*)AfxGetMainWnd();
-        if (pMainFrame && pMainFrame->GetInspectorView())
-        {
-            pMainFrame->GetInspectorView()->SetSelectedGameObject(pSelected);
-        }
-    }
-    else if (m_bLButtonDown && m_gizmoAxis == 0)
-    {
-        CWnd::OnMouseMove(nFlags, point);
-    }
-    
     m_lastMousePos = point;
 }
 

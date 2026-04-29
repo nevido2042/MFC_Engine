@@ -27,6 +27,7 @@ protected:
 
 public:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam) override;
 	CGraphicsEngine* GetEngine() { return m_pEngine.get(); }
 	void SetSelectedGameObject(std::shared_ptr<class CGameObject> pObj) 
 	{ 

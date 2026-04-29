@@ -13,6 +13,7 @@
 #include "PickingSystem.h"
 #include "SceneManager.h"
 #include "Gizmo.h"
+#include "ImGuiManager.h"
 
 // 쉐이더 컴파일 라이브러리 링크
 
@@ -25,6 +26,7 @@ CGraphicsEngine::CGraphicsEngine()
 
 CGraphicsEngine::~CGraphicsEngine()
 {
+    m_pDevice->WaitForGPU();
 }
 
 /**
@@ -62,6 +64,11 @@ bool CGraphicsEngine::Initialize(HWND hWnd, int width, int height)
     CPickingSystem::GetInstance().Initialize(m_pDevice->GetDevice(), m_pGeometryPass->GetRootSignature(), m_nWidth, m_nHeight);
     CPrimitiveGenerator::GetInstance().Initialize(m_pDevice->GetDevice());
     CreateConstantBuffer();
+
+    // --- ImGui Manager 초기화 ---
+    m_pImGuiManager = std::make_unique<CImGuiManager>();
+    if (!m_pImGuiManager->Initialize(hWnd, m_pDevice->GetDevice(), m_pDevice->GetCommandQueue(), 2))
+        return false;
 
     m_bIsInitialized = true;
     return true;
@@ -113,7 +120,31 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
     m_pLightingPass->Execute(context);
 
     // Pass 3: Forward Rendering (Gizmos)
-    m_pGizmoPass->Execute(context);
+    // m_pGizmoPass->Execute(context); // Legacy MFC Gizmo Disabled
+
+    // --- ImGui / ImGuizmo Render ---
+    m_pImGuiManager->NewFrame();
+
+    // 뷰/투영 행렬 계산
+    DirectX::XMMATRIX viewMat, projMat;
+    {
+        std::lock_guard<std::mutex> camLock(CSceneManager::GetInstance().GetCameraMutex());
+        viewMat = CSceneManager::GetInstance().GetEditorCamera().GetViewMatrix();
+    }
+    float aspectRatio = static_cast<float>(m_nWidth) / static_cast<float>(m_nHeight);
+    projMat = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 1000.0f);
+
+    // 기즈모 및 그리드 업데이트
+    m_pImGuiManager->UpdateGizmo(pSelectedObj.get(), viewMat, projMat, m_nWidth, m_nHeight);
+
+    // Pass 1: Geometry Pass
+    m_pGeometryPass->Execute(context);
+
+    // Pass 2: Lighting Pass
+    m_pLightingPass->Execute(context);
+
+    // Pass 3: ImGui 최종 렌더링
+    m_pImGuiManager->Render(commandList, m_pMainSwapChain->GetRtvHandle());
 
     // Transition Main SwapChain back to Present
     commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(rtv, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
