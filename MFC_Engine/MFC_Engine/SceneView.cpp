@@ -8,7 +8,7 @@
 #include "InspectorView.h"
 #include "GameObject.h"
 #include "Transform.h"
-#include "Gizmo.h"
+// #include "Gizmo.h" // Legacy Gizmo Removed
 #include "PickingSystem.h"
 #include "ImGui/imgui.h"
 #include "ImGui/ImGuizmo.h"
@@ -90,10 +90,6 @@ int CSceneView::OnCreate(LPCREATESTRUCT lpCreateStruct)
     CRect rect;
     GetClientRect(rect);
     m_pEngine->Initialize(GetSafeHwnd(), rect.Width(), rect.Height());
-
-    // 기즈모 초기화 (엔진의 디바이스 사용)
-    m_pGizmo = std::make_unique<CGizmo>();
-    m_pGizmo->Initialize(m_pEngine->GetDevice());
 
     // 렌더링 스레드 시작
     m_bIsRunning = true;
@@ -257,7 +253,7 @@ void CSceneView::RenderLoop()
         if (m_pEngine)
         {
             ProcessInput(deltaTime);
-            m_pEngine->Render(CSceneManager::GetInstance().GetActiveScene(), GetSelectedGameObject(), m_pGizmo.get());
+            m_pEngine->Render(CSceneManager::GetInstance().GetActiveScene(), GetSelectedGameObject());
             
             if (m_pEngine->IsDebugViewActive())
             {

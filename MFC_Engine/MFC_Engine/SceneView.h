@@ -52,7 +52,7 @@ private:
 
 	// --- 선택 및 기즈모 ---
 	std::shared_ptr<class CGameObject> m_pSelectedObj;
-	std::unique_ptr<class CGizmo> m_pGizmo;
+	// std::unique_ptr<class CGizmo> m_pGizmo; // Legacy Gizmo Removed
 
 	bool m_bRButtonDown;
 	bool m_bLButtonDown;

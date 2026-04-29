@@ -221,7 +221,6 @@
     <ClInclude Include="PickingSystem.h" />
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="Device.h" />
-    <ClInclude Include="Gizmo.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="GBuffer.h" />
@@ -229,7 +228,6 @@
     <ClInclude Include="GeometryPass.h" />
     <ClInclude Include="LightingPass.h" />
     <ClInclude Include="DebugPass.h" />
-    <ClInclude Include="GizmoPass.h" />
     <ClInclude Include="ImGui\imconfig.h" />
     <ClInclude Include="ImGui\imgui.h" />
     <ClInclude Include="ImGui\imgui_internal.h" />
@@ -272,13 +270,11 @@
     <ClCompile Include="PickingSystem.cpp" />
     <ClCompile Include="ConstantBuffer.cpp" />
     <ClCompile Include="Device.cpp" />
-    <ClCompile Include="Gizmo.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="GBuffer.cpp" />
     <ClCompile Include="GeometryPass.cpp" />
     <ClCompile Include="LightingPass.cpp" />
     <ClCompile Include="DebugPass.cpp" />
-    <ClCompile Include="GizmoPass.cpp" />
     <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="ImGui\imgui.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -346,7 +342,6 @@
     <None Include="Lighting.hlsl" />
     <None Include="DebugGBuffer.hlsl" />
     <None Include="Unlit.hlsl" />
-    <None Include="Gizmo.hlsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

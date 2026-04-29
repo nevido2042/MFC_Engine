@@ -11,7 +11,7 @@
 #include "GeometryPass.h"
 #include "LightingPass.h"
 #include "DebugPass.h"
-#include "GizmoPass.h"
+// #include "GizmoPass.h" // Legacy Gizmo Removed
 // ImGui 로직은 CImGuiManager에서 관리
 class CImGuiManager;
 
@@ -27,7 +27,7 @@ public:
 
     // --- 핵심 인터페이스 ---
     bool Initialize(HWND hWnd, int width, int height);
-    void Render(std::shared_ptr<class CScene> pScene, std::shared_ptr<class CGameObject> pSelectedObj, class CGizmo* pGizmo);
+    void Render(std::shared_ptr<class CScene> pScene, std::shared_ptr<class CGameObject> pSelectedObj);
     void RenderDebugGBuffers();
     bool InitializeDebugSwapChain(HWND hWnd, int width, int height);
     void ResizeDebugSwapChain(int width, int height);
@@ -69,7 +69,7 @@ private:
     // --- 렌더 패스 ---
     std::unique_ptr<class CGeometryPass> m_pGeometryPass;
     std::unique_ptr<class CLightingPass> m_pLightingPass;
-    std::unique_ptr<class CGizmoPass> m_pGizmoPass;
+    // std::unique_ptr<class CGizmoPass> m_pGizmoPass; // Legacy Gizmo Removed
     std::unique_ptr<class CDebugPass> m_pDebugPass;
     
     std::unique_ptr<CConstantBuffer> m_pConstantBuffer; // 상수 버퍼 매니저

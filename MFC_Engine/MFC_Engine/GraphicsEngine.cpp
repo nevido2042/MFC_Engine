@@ -8,11 +8,9 @@
 #include "Light.h"
 #include "GeometryPass.h"
 #include "LightingPass.h"
-#include "GizmoPass.h"
 #include "DebugPass.h"
 #include "PickingSystem.h"
 #include "SceneManager.h"
-#include "Gizmo.h"
 #include "ImGuiManager.h"
 
 // 쉐이더 컴파일 라이브러리 링크
@@ -55,9 +53,6 @@ bool CGraphicsEngine::Initialize(HWND hWnd, int width, int height)
     m_pLightingPass = std::make_unique<CLightingPass>();
     m_pLightingPass->Initialize(m_pDevice->GetDevice());
 
-    m_pGizmoPass = std::make_unique<CGizmoPass>();
-    m_pGizmoPass->Initialize(m_pDevice->GetDevice());
-
     m_pDebugPass = std::make_unique<CDebugPass>();
     m_pDebugPass->Initialize(m_pDevice->GetDevice());
 
@@ -84,7 +79,7 @@ void CGraphicsEngine::CreateConstantBuffer()
 }
 
 
-void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGameObject> pSelectedObj, CGizmo* pGizmo)
+void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGameObject> pSelectedObj)
 {
     if (!m_bIsInitialized) return;
 
@@ -111,16 +106,12 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
 
     context.resources.pMainSwapChain = m_pMainSwapChain.get();
     context.resources.pGBuffer = m_pGBuffer.get();
-    context.resources.pGizmo = pGizmo;
 
     // Pass 1: Geometry Pass
     m_pGeometryPass->Execute(context);
 
     // Pass 2: Lighting Pass
     m_pLightingPass->Execute(context);
-
-    // Pass 3: Forward Rendering (Gizmos)
-    // m_pGizmoPass->Execute(context); // Legacy MFC Gizmo Disabled
 
     // --- ImGui / ImGuizmo Render ---
     m_pImGuiManager->NewFrame();
@@ -236,7 +227,3 @@ void CGraphicsEngine::ResizeDebugSwapChain(int width, int height)
         m_pDebugSwapChain->Resize(m_pDevice.get(), width, height);
     }
 }
-
-
-
-
