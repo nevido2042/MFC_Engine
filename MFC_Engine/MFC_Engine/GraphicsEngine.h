@@ -1,24 +1,8 @@
 #pragma once
-
-#include "RenderPass.h"
-// 인라인 전방 선언 사용으로 외부 클래스 의존성 제거
+#include "EngineStructs.h"
 #include "TimeManager.h"
-#include "PrimitiveGenerator.h"
-#include "ConstantBuffer.h"
-#include "Device.h"
-#include "SwapChain.h"
-#include "GBuffer.h"
-#include "GeometryPass.h"
-#include "LightingPass.h"
-#include "DebugPass.h"
-// #include "GizmoPass.h" // Legacy Gizmo Removed
-// ImGui 로직은 CImGuiManager에서 관리
-class CImGuiManager;
+#include <mutex>
 
-/**
- * @class CGraphicsEngine
- * @brief DirectX 12 기반의 그래픽 렌더링 핵심 엔진 클래스입니다.
- */
 class CGraphicsEngine
 {
 public:
@@ -26,66 +10,83 @@ public:
     ~CGraphicsEngine();
 
     // --- 핵심 인터페이스 ---
-    bool Initialize(HWND hWnd, int width, int height);
+    bool Initialize(class CDevice* pDevice, int width, int height);
+    
+    // 컴포넌트 주입 (DI) - R-value 참조를 사용하여 호출부의 소멸자 참조 방지
+    void SetSwapChain(std::unique_ptr<class CSwapChain>&& pSwapChain);
+    void SetGBuffer(std::unique_ptr<class CGBuffer>&& pGBuffer);
+    void SetImGuiManager(std::unique_ptr<class CImGuiManager>&& pImGui);
+
     void Render(std::shared_ptr<class CScene> pScene, std::shared_ptr<class CGameObject> pSelectedObj);
     void RenderDebugGBuffers();
+    
+    // 컴포넌트 주입 (DI)
+    void SetPickingSystem(std::unique_ptr<class CPickingSystem>&& pPicking);
+    void SetPrimitiveGenerator(std::unique_ptr<class CPrimitiveGenerator>&& pGenerator);
+
+    class CPickingSystem* GetPickingSystem() { return m_pPickingSystem.get(); }
+    class CPrimitiveGenerator* GetPrimitiveGenerator() { return m_pPrimitiveGenerator.get(); }
+    
+    // 디버그용 스왑체인 관련 (GBufferView 등에서 사용)
     bool InitializeDebugSwapChain(HWND hWnd, int width, int height);
     void ResizeDebugSwapChain(int width, int height);
     void Resize(int width, int height);
-    float GetFPS() const { return m_timeManager.GetFPS(); }
-    ID3D12Device* GetDevice() { return m_pDevice ? m_pDevice->GetDevice() : nullptr; }
-    
+
+    float GetFPS() const;
+    ID3D12Device* GetDevice();
+    ID3D12RootSignature* GetRootSignature();
+
     void SetDebugViewActive(bool bActive) { m_bDebugViewActive = bActive; }
     bool IsDebugViewActive() const { return m_bDebugViewActive; }
     
-    // --- 리소스 접근자 (CPickingSystem 등에서 사용) ---
-    ID3D12CommandQueue* GetCommandQueue() { return m_pDevice->GetCommandQueue(); }
-    ID3D12CommandAllocator* GetCommandAllocator() { return m_pDevice->GetCommandAllocator(); }
-    ID3D12GraphicsCommandList* GetCommandList() { return m_pDevice->GetCommandList(); }
-    ID3D12RootSignature* GetRootSignature() { return m_pGeometryPass ? m_pGeometryPass->GetRootSignature() : nullptr; }
-    ID3D12Resource* GetConstantBufferResource() { return m_pConstantBuffer->GetResource(); }
-    UINT8* GetConstantBufferPtr() { return m_pConstantBuffer->GetMappedData(); }
+    // --- 헬퍼 함수 ---
+    ID3D12CommandQueue* GetCommandQueue();
+    ID3D12CommandAllocator* GetCommandAllocator();
+    ID3D12GraphicsCommandList* GetCommandList();
+    ID3D12Resource* GetConstantBufferResource();
+    UINT8* GetConstantBufferPtr();
     int GetWidth() const { return m_nWidth; }
     int GetHeight() const { return m_nHeight; }
-    ID3D12Resource* GetGBufferResource(int index) { return m_pGBuffer ? m_pGBuffer->GetResource(index) : nullptr; }
 
-    void WaitGPU() { if (m_pDevice) m_pDevice->WaitForGPU(); }
+    void PrepareCommandList();
+    void SubmitCommandList();
+    void WaitGPU();
+
     std::mutex& GetMutex() { return m_mutex; }
+    ID3D12Resource* GetGBufferResource(int nIndex);
 
-    void PrepareCommandList() { if (m_pDevice) m_pDevice->PrepareCommandList(); }
-    void SubmitCommandList() { if (m_pDevice) m_pDevice->SubmitCommandList(); }
+    // --- 렌더 패스 관리 ---
+    void RegisterRenderPass(std::unique_ptr<class CRenderPass> pPass, bool bIsMainPass = true);
 
 private:
     void CreateConstantBuffer();    // 상수 버퍼 생성
 
-
 private:
-    // --- DX12 핵심 장치 ---
-    std::unique_ptr<CDevice> m_pDevice;
-    std::unique_ptr<CSwapChain> m_pMainSwapChain;
-    std::unique_ptr<CSwapChain> m_pDebugSwapChain;
-    std::unique_ptr<CGBuffer> m_pGBuffer;
+    // --- DX12 핵심 장치 (외부 주입) ---
+    class CDevice* m_pDevice = nullptr;
+    std::unique_ptr<class CSwapChain> m_pMainSwapChain;
+    std::unique_ptr<class CSwapChain> m_pDebugSwapChain;
+    std::unique_ptr<class CGBuffer> m_pGBuffer;
 
-    // --- 렌더 패스 ---
-    std::unique_ptr<class CGeometryPass> m_pGeometryPass;
-    std::unique_ptr<class CLightingPass> m_pLightingPass;
-    // std::unique_ptr<class CGizmoPass> m_pGizmoPass; // Legacy Gizmo Removed
+    std::vector<std::unique_ptr<class CRenderPass>> m_mainRenderPasses;
     std::unique_ptr<class CDebugPass> m_pDebugPass;
     
-    std::unique_ptr<CConstantBuffer> m_pConstantBuffer; // 상수 버퍼 매니저
-
+    class CGeometryPass* m_pMainGeometryPass = nullptr; // RootSignature 참조용 포인터
+    
+    std::unique_ptr<class CConstantBuffer> m_pConstantBuffer; // 상수 버퍼 매니저
     std::unique_ptr<class CImGuiManager> m_pImGuiManager;
 
+    std::unique_ptr<class CPickingSystem> m_pPickingSystem;
+    std::unique_ptr<class CPrimitiveGenerator> m_pPrimitiveGenerator;
 
     // --- 동기화 및 상태 변수 ---
     bool m_bIsInitialized;
     bool m_bDebugViewActive = false;
+    std::mutex m_mutex;
+
+    CTimeManager m_timeManager;
     int m_nWidth;
     int m_nHeight;
 
-    // --- 매니저 객체 분리 ---
-    CTimeManager m_timeManager;
-
-    // --- 스레드 동기화 ---
-    std::mutex m_mutex;
+    ComPtr<ID3D12RootSignature> m_pRootSignature;
 };

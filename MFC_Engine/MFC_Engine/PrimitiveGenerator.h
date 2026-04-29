@@ -13,11 +13,8 @@
 class CPrimitiveGenerator
 {
 public:
-    static CPrimitiveGenerator& GetInstance()
-    {
-        static CPrimitiveGenerator instance;
-        return instance;
-    }
+    CPrimitiveGenerator();
+    ~CPrimitiveGenerator();
 
     // --- 초기화 및 관리 ---
     void Initialize(ComPtr<ID3D12Device> device);
@@ -38,8 +35,5 @@ public:
     static std::shared_ptr<CMesh> CreateCapsuleMesh(ComPtr<ID3D12Device> device);
 
 private:
-    CPrimitiveGenerator() = default;
-    ~CPrimitiveGenerator() = default;
-
     std::map<std::wstring, std::shared_ptr<CMesh>> m_meshes;
 };

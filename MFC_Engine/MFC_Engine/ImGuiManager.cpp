@@ -9,6 +9,7 @@ CImGuiManager::CImGuiManager()
     : m_bIsInitialized(false)
     , m_currentGizmoOperation(ImGuizmo::TRANSLATE)
     , m_currentGizmoMode(ImGuizmo::LOCAL)
+    , m_pContext(nullptr)
 {
 }
 
@@ -30,7 +31,9 @@ bool CImGuiManager::Initialize(HWND hWnd, ID3D12Device* pDevice, ID3D12CommandQu
 
     // 2. ImGui Context 초기화
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
+    m_pContext = ImGui::CreateContext();
+    ImGui::SetCurrentContext(m_pContext);
+
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -60,17 +63,22 @@ bool CImGuiManager::Initialize(HWND hWnd, ID3D12Device* pDevice, ID3D12CommandQu
 
 void CImGuiManager::Shutdown()
 {
-    if (m_bIsInitialized)
+    if (m_bIsInitialized && m_pContext)
     {
+        ImGui::SetCurrentContext(m_pContext);
         ImGui_ImplDX12_Shutdown();
         ImGui_ImplWin32_Shutdown();
-        ImGui::DestroyContext();
+        ImGui::DestroyContext(m_pContext);
+        m_pContext = nullptr;
         m_bIsInitialized = false;
     }
 }
 
 void CImGuiManager::NewFrame()
 {
+    if (!m_bIsInitialized) return;
+
+    ImGui::SetCurrentContext(m_pContext);
     ImGui_ImplDX12_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
@@ -79,6 +87,9 @@ void CImGuiManager::NewFrame()
 
 void CImGuiManager::Render(ID3D12GraphicsCommandList* pCommandList, D3D12_CPU_DESCRIPTOR_HANDLE hRtv)
 {
+    if (!m_bIsInitialized) return;
+
+    ImGui::SetCurrentContext(m_pContext);
     ImGui::Render();
 
     // 렌더 타겟 설정 (ImGui 그리기 직전)
@@ -94,6 +105,9 @@ void CImGuiManager::Render(ID3D12GraphicsCommandList* pCommandList, D3D12_CPU_DE
 
 void CImGuiManager::UpdateGizmo(CGameObject* pSelectedObj, const DirectX::XMMATRIX& matView, const DirectX::XMMATRIX& matProj, int nWidth, int nHeight)
 {
+    if (!m_bIsInitialized) return;
+    ImGui::SetCurrentContext(m_pContext);
+
     ImGuiIO& io = ImGui::GetIO();
     ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
     ImGuizmo::SetRect(0, 0, (float)nWidth, (float)nHeight);

@@ -109,6 +109,10 @@ BOOL CMFCEngineApp::InitInstance()
 	theApp.GetTooltipManager()->SetTooltipParams(AFX_TOOLTIP_TYPE_ALL,
 		RUNTIME_CLASS(CMFCToolTipCtrl), &ttParams);
 
+	// CDevice 초기화 (전역 공유 자원)
+	m_pDevice = std::make_unique<CDevice>();
+	m_pDevice->Initialize();
+
 	// 주 프레임 창을 만듭니다.
 	CMainFrame* pMainFrame = new CMainFrame;
 	if (!pMainFrame || !pMainFrame->LoadFrame(IDR_MAINFRAME))

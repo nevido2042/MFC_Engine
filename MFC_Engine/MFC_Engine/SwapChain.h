@@ -18,6 +18,8 @@ public:
 
     const D3D12_VIEWPORT& GetViewport() const { return m_viewport; }
     const D3D12_RECT& GetScissorRect() const { return m_scissorRect; }
+    int GetWidth() const { return static_cast<int>(m_viewport.Width); }
+    int GetHeight() const { return static_cast<int>(m_viewport.Height); }
     UINT GetCurrentBackBufferIndex() const { return m_nFrameIndex; }
 
 private:

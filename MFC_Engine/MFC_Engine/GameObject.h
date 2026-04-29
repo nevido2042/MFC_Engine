@@ -25,7 +25,7 @@ public:
 
     void Serialize(nlohmann::json& j) const;
     void Deserialize(const nlohmann::json& j);
-    void Render(struct ID3D12GraphicsCommandList* pCommandList, int& objIndex, class CConstantBuffer* pCB, int nWidth, int nHeight);
+    void Render(const struct RenderContext& context, int& objIndex);
 
     // Component management
     template<typename T>

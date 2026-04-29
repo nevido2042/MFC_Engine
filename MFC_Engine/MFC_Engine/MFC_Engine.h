@@ -8,6 +8,8 @@
 #endif
 
 #include "resource.h"       // 주 기호입니다.
+#include "Device.h"
+#include <memory>
 
 
 // CMFCEngineApp:
@@ -30,6 +32,12 @@ public:
 	UINT  m_nAppLook;
 	BOOL  m_bHiColorIcons;
 
+	CDevice* GetDevice() { return m_pDevice.get(); }
+
+private:
+	std::unique_ptr<CDevice> m_pDevice;
+
+public:
 	virtual void PreLoadState();
 	virtual void LoadCustomState();
 	virtual void SaveCustomState();

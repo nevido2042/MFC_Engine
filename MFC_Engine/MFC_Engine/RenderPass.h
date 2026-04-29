@@ -23,7 +23,8 @@ struct RenderContext
     struct RenderResources {
         class CSwapChain* pMainSwapChain = nullptr;
         class CGBuffer* pGBuffer = nullptr;
-        // class CGizmo* pGizmo = nullptr; // Legacy Gizmo Removed
+        class CPickingSystem* pPickingSystem = nullptr;
+        class CPrimitiveGenerator* pPrimitiveGenerator = nullptr;
     } resources;
 };
 

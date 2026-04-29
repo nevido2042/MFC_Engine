@@ -3,6 +3,9 @@
 #include "GraphicsEngine.h"
 #include "d3dx12.h"
 
+CPickingSystem::CPickingSystem() : m_nWidth(0), m_nHeight(0) {}
+CPickingSystem::~CPickingSystem() {}
+
 void CPickingSystem::Initialize(ComPtr<ID3D12Device> device, ID3D12RootSignature* rootSignature, int width, int height)
 {
     m_nWidth = width;
@@ -59,8 +62,9 @@ UINT CPickingSystem::Pick(int x, int y, CGraphicsEngine* pEngine)
     pEngine->PrepareCommandList();
 
     // 1. Transition ID Buffer to COPY_SOURCE
-    pCmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pIDBuffer,
-        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE));
+    auto barrier1 = CD3DX12_RESOURCE_BARRIER::Transition(pIDBuffer,
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    pCmdList->ResourceBarrier(1, &barrier1);
 
     // 2. Copy Texture Region (Pixel) to Readback Buffer
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint = {};
@@ -88,8 +92,9 @@ UINT CPickingSystem::Pick(int x, int y, CGraphicsEngine* pEngine)
     pCmdList->CopyTextureRegion(&dst, 0, 0, 0, &src, &box);
 
     // 3. Transition back
-    pCmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pIDBuffer,
-        D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+    auto barrier2 = CD3DX12_RESOURCE_BARRIER::Transition(pIDBuffer,
+        D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    pCmdList->ResourceBarrier(1, &barrier2);
 
     pEngine->SubmitCommandList();
     pEngine->WaitGPU();

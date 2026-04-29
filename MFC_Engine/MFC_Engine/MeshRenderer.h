@@ -17,7 +17,7 @@ public:
     virtual void Deserialize(const nlohmann::json& j) override;
 
     // 렌더링 함수 추가
-    void Render(struct ID3D12GraphicsCommandList* pCommandList, int& objIndex, class CConstantBuffer* pCB, int nWidth, int nHeight);
+    void Render(const struct RenderContext& context, int& objIndex);
 
     // 렌더링 활성화 여부
     bool m_bIsEnabled = true;

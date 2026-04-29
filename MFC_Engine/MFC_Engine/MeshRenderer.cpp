@@ -7,6 +7,7 @@
 #include "Camera.h"
 #include "EngineStructs.h"
 #include "PrimitiveGenerator.h"
+#include "RenderPass.h"
 
 void CMeshRenderer::Serialize(nlohmann::json& j) const
 {
@@ -21,7 +22,7 @@ void CMeshRenderer::Deserialize(const nlohmann::json& j)
     }
 }
 
-void CMeshRenderer::Render(ID3D12GraphicsCommandList* pCommandList, int& objIndex, CConstantBuffer* pCB, int nWidth, int nHeight)
+void CMeshRenderer::Render(const RenderContext& context, int& objIndex)
 {
     if (!m_bIsEnabled) return;
 
@@ -40,7 +41,7 @@ void CMeshRenderer::Render(ID3D12GraphicsCommandList* pCommandList, int& objInde
             matView = CSceneManager::GetInstance().GetEditorCamera().GetViewMatrix();
         }
 
-        float aspectRatio = static_cast<float>(nWidth) / static_cast<float>(nHeight);
+        float aspectRatio = static_cast<float>(context.nWidth) / static_cast<float>(context.nHeight);
         DirectX::XMMATRIX matProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 1000.0f);
 
         DirectX::XMMATRIX matWVP = matWorld * matView * matProj;
@@ -57,17 +58,20 @@ void CMeshRenderer::Render(ID3D12GraphicsCommandList* pCommandList, int& objInde
         cb.objectColorID.w = 1.0f;
         cb.meshColor = { 0.0f, 0.0f, 0.0f, 0.0f }; 
 
-        if (pCB)
+        if (context.pCB)
         {
-            pCB->Update(objIndex, &cb, sizeof(cb));
-            pCommandList->SetGraphicsRootConstantBufferView(0, pCB->GetGPUVirtualAddress(objIndex));
+            context.pCB->Update(objIndex, &cb, sizeof(cb));
+            context.pCommandList->SetGraphicsRootConstantBufferView(0, context.pCB->GetGPUVirtualAddress(objIndex));
         }
 
         // MeshFilter의 데이터를 참조하여 실제 렌더링 수행
-        auto pMesh = CPrimitiveGenerator::GetInstance().GetPrimitiveMesh(pFilter->m_strMeshName);
-        if (pMesh)
+        if (context.resources.pPrimitiveGenerator)
         {
-            pMesh->Render(pCommandList);
+            auto pMesh = context.resources.pPrimitiveGenerator->GetPrimitiveMesh(pFilter->m_strMeshName);
+            if (pMesh)
+            {
+                pMesh->Render(context.pCommandList);
+            }
         }
         objIndex++;
     }

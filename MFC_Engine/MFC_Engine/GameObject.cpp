@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "StringUtil.h"
 #include "Light.h"
+#include "RenderPass.h"
 
 UINT CGameObject::s_nNextID = 1;
 
@@ -144,18 +145,18 @@ void CGameObject::Deserialize(const nlohmann::json& j)
     }
 }
 
-void CGameObject::Render(ID3D12GraphicsCommandList* pCommandList, int& objIndex, CConstantBuffer* pCB, int nWidth, int nHeight)
+void CGameObject::Render(const RenderContext& context, int& objIndex)
 {
     if (objIndex >= 1024) return;
 
     auto pRenderer = GetComponent<CMeshRenderer>();
     if (pRenderer)
     {
-        pRenderer->Render(pCommandList, objIndex, pCB, nWidth, nHeight);
+        pRenderer->Render(context, objIndex);
     }
 
     for (auto& child : m_vecChildren)
     {
-        child->Render(pCommandList, objIndex, pCB, nWidth, nHeight);
+        child->Render(context, objIndex);
     }
 }

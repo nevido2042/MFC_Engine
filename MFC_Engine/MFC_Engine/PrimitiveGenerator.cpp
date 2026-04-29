@@ -4,6 +4,9 @@
 
 using namespace DirectX;
 
+CPrimitiveGenerator::CPrimitiveGenerator() {}
+CPrimitiveGenerator::~CPrimitiveGenerator() {}
+
 std::vector<Vertex> CPrimitiveGenerator::CreateCubeData()
 {
     return std::vector<Vertex>

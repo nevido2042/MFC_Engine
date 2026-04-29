@@ -116,7 +116,7 @@ void CGeometryPass::Execute(const RenderContext& context)
         int objIndex = 0;
         for (auto& pObj : gameObjects)
         {
-            pObj->Render(context.pCommandList, objIndex, context.pCB, context.nWidth, context.nHeight);
+            pObj->Render(context, objIndex);
         }
 
         context.resources.pGBuffer->TransitionToShaderResource(context.pCommandList);

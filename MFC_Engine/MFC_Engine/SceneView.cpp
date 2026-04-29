@@ -10,6 +10,13 @@
 #include "Transform.h"
 // #include "Gizmo.h" // Legacy Gizmo Removed
 #include "PickingSystem.h"
+#include "MFC_Engine.h"
+#include "RenderPassFactory.h"
+#include "RenderPass.h"
+#include "PrimitiveGenerator.h"
+#include "SwapChain.h"
+#include "GBuffer.h"
+#include "ImGuiManager.h"
 #include "ImGui/imgui.h"
 #include "ImGui/ImGuizmo.h"
 
@@ -89,7 +96,41 @@ int CSceneView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
     CRect rect;
     GetClientRect(rect);
-    m_pEngine->Initialize(GetSafeHwnd(), rect.Width(), rect.Height());
+    
+    // 3. 엔진 초기화 (디바이스 주입)
+    CDevice* pDevice = theApp.GetDevice();
+    m_pEngine->Initialize(pDevice, rect.Width(), rect.Height());
+
+    // 4. 주요 컴포넌트 주입 (Dependency Injection)
+    auto pSwapChain = std::make_unique<CSwapChain>();
+    pSwapChain->Initialize(pDevice, GetSafeHwnd(), rect.Width(), rect.Height());
+    m_pEngine->SetSwapChain(std::move(pSwapChain));
+
+    auto pGBuffer = std::make_unique<CGBuffer>();
+    pGBuffer->Initialize(pDevice, rect.Width(), rect.Height());
+    m_pEngine->SetGBuffer(std::move(pGBuffer));
+
+    auto pImGuiManager = std::make_unique<CImGuiManager>();
+    pImGuiManager->Initialize(GetSafeHwnd(), pDevice->GetDevice(), pDevice->GetCommandQueue(), 2);
+    m_pEngine->SetImGuiManager(std::move(pImGuiManager));
+
+    // 5. 렌더 패스 구성 (추상 팩토리 패턴 적용)
+    std::unique_ptr<IRenderPassFactory> pPassFactory = 
+        std::make_unique<CDX12RenderPassFactory>(pDevice->GetDevice());
+
+    m_pEngine->RegisterRenderPass(pPassFactory->CreatePass("Geometry"));
+    m_pEngine->RegisterRenderPass(pPassFactory->CreatePass("Lighting"));
+
+    // 6. 주요 시스템 주입 (Advanced DI)
+    // CPickingSystem 주입
+    auto pPicking = std::make_unique<CPickingSystem>();
+    pPicking->Initialize(pDevice->GetDevice(), m_pEngine->GetRootSignature(), rect.Width(), rect.Height());
+    m_pEngine->SetPickingSystem(std::move(pPicking));
+
+    // CPrimitiveGenerator 주입
+    auto pGenerator = std::make_unique<CPrimitiveGenerator>();
+    pGenerator->Initialize(pDevice->GetDevice());
+    m_pEngine->SetPrimitiveGenerator(std::move(pGenerator));
 
     // 렌더링 스레드 시작
     m_bIsRunning = true;
@@ -166,9 +207,12 @@ void CSceneView::OnLButtonDown(UINT nFlags, CPoint point)
     bool bIsPicked = false;
     if (m_pEngine)
     {
-        // 엔진 대신 피킹 시스템을 통해 직접 피킹 수행
-        // 기즈모 렌더링 로직을 람다로 전달하여 결합도 해제
-        UINT pickedID = CPickingSystem::GetInstance().Pick(point.x, point.y, m_pEngine.get());
+        // 엔진에 주입된 피킹 시스템을 사용
+        UINT pickedID = 0;
+        if (auto pPicking = m_pEngine->GetPickingSystem())
+        {
+            pickedID = pPicking->Pick(point.x, point.y, m_pEngine.get());
+        }
 
         if (pickedID > 0)
         {

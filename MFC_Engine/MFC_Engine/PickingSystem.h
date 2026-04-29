@@ -8,11 +8,8 @@ using Microsoft::WRL::ComPtr;
 class CPickingSystem
 {
 public:
-    static CPickingSystem& GetInstance()
-    {
-        static CPickingSystem instance;
-        return instance;
-    }
+    CPickingSystem();
+    ~CPickingSystem();
 
     void Initialize(ComPtr<ID3D12Device> device, ID3D12RootSignature* rootSignature, int width, int height);
     void Resize(ComPtr<ID3D12Device> device, int width, int height);

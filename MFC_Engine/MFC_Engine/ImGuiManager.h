@@ -50,4 +50,6 @@ private:
     // 기즈모 상태 관리
     ImGuizmo::OPERATION m_currentGizmoOperation;
     ImGuizmo::MODE      m_currentGizmoMode;
+
+    struct ImGuiContext* m_pContext;
 };
