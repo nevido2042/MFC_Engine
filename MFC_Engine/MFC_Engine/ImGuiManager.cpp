@@ -152,11 +152,29 @@ void CImGuiManager::UpdateGizmo(CGameObject* pSelectedObj, const DirectX::XMMATR
         if (ImGuizmo::IsUsing())
         {
             DirectX::XMMATRIX matModifiedWorld = DirectX::XMLoadFloat4x4(&world);
-            DirectX::XMVECTOR vScale, qRot, vPos;
-            DirectX::XMMatrixDecompose(&vScale, &qRot, &vPos, matModifiedWorld);
+            DirectX::XMMATRIX matLocal = matModifiedWorld;
 
-            DirectX::XMStoreFloat3(&pTransform->m_vPosition, vPos);
-            // 필요시 회전 및 스케일도 업데이트 가능
+            // 부모 오브젝트가 있는 경우, 월드 행렬을 부모의 역행렬과 곱해 로컬 행렬로 변환합니다.
+            if (pSelectedObj->GetParent())
+            {
+                DirectX::XMMATRIX matParentWorld = pSelectedObj->GetParent()->GetTransform()->GetWorldMatrix();
+                DirectX::XMMATRIX matInvParent = DirectX::XMMatrixInverse(nullptr, matParentWorld);
+                matLocal = matLocal * matInvParent;
+            }
+
+            // 로컬 행렬에서 위치, 회전, 스케일 성분을 추출합니다.
+            float tr[3], rot[3], sc[3];
+            DirectX::XMFLOAT4X4 matLocalF;
+            DirectX::XMStoreFloat4x4(&matLocalF, matLocal);
+            ImGuizmo::DecomposeMatrixToComponents(&matLocalF.m[0][0], tr, rot, sc);
+
+            // 추출된 정보를 트랜스폼 컴포넌트에 반영합니다.
+            pTransform->m_vPosition = { tr[0], tr[1], tr[2] };
+            // ImGuizmo는 도(degree) 단위를 사용하므로 라디안(radian)으로 변환하여 저장합니다.
+            pTransform->m_vRotation = { DirectX::XMConvertToRadians(rot[0]), 
+                                        DirectX::XMConvertToRadians(rot[1]), 
+                                        DirectX::XMConvertToRadians(rot[2]) };
+            pTransform->m_vScale = { sc[0], sc[1], sc[2] };
         }
     }
 }
