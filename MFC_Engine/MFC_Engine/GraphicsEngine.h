@@ -17,7 +17,7 @@ public:
     void SetGBuffer(std::unique_ptr<class CGBuffer>&& pGBuffer);
     void SetImGuiManager(std::unique_ptr<class CImGuiManager>&& pImGui);
 
-    void Render(std::shared_ptr<class CScene> pScene, std::shared_ptr<class CGameObject> pSelectedObj);
+    void Render(std::shared_ptr<class CScene> pScene, std::shared_ptr<class CGameObject> pSelectedObj, class CCamera* pCamera);
     void RenderDebugGBuffers();
     
     // 컴포넌트 주입 (DI)

@@ -79,3 +79,8 @@ DirectX::XMVECTOR CCamera::GetUp() const
     DirectX::XMMATRIX matCamRot = DirectX::XMMatrixRotationRollPitchYaw(m_cameraPitch, m_cameraYaw, 0.0f);
     return DirectX::XMVector3TransformNormal(DirectX::XMVectorSet(0, 1, 0, 0), matCamRot);
 }
+
+DirectX::XMMATRIX CCamera::GetProjectionMatrix(float aspectRatio) const
+{
+    return DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 1000.0f);
+}

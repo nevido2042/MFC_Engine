@@ -297,7 +297,7 @@ void CSceneView::RenderLoop()
         if (m_pEngine)
         {
             ProcessInput(deltaTime);
-            m_pEngine->Render(CSceneManager::GetInstance().GetActiveScene(), GetSelectedGameObject());
+            m_pEngine->Render(CSceneManager::GetInstance().GetActiveScene(), GetSelectedGameObject(), &CSceneManager::GetInstance().GetEditorCamera());
             
             if (m_pEngine->IsDebugViewActive())
             {

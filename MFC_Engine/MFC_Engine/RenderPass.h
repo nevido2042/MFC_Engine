@@ -17,6 +17,7 @@ struct RenderContext
     struct SceneInfo {
         class CScene* pScene = nullptr;
         class CGameObject* pSelectedObj = nullptr;
+        class CCamera* pCamera = nullptr;
     } scene;
 
     // [Resources] 렌더링 타겟 및 리소스

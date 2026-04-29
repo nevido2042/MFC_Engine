@@ -44,6 +44,7 @@ public:
     DirectX::XMVECTOR GetForward() const;
     DirectX::XMVECTOR GetRight() const;
     DirectX::XMVECTOR GetUp() const;
+    DirectX::XMMATRIX GetProjectionMatrix(float aspectRatio) const;
 
 private:
     DirectX::XMFLOAT3 m_cameraPos; // 카메라 위치

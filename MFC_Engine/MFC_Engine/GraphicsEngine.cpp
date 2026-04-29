@@ -113,7 +113,7 @@ void CGraphicsEngine::CreateConstantBuffer()
 }
 
 
-void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGameObject> pSelectedObj)
+void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGameObject> pSelectedObj, CCamera* pCamera)
 {
     if (!m_bIsInitialized) return;
 
@@ -137,6 +137,7 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
 
     context.scene.pScene = pScene.get();
     context.scene.pSelectedObj = pSelectedObj.get();
+    context.scene.pCamera = pCamera;
 
     context.resources.pMainSwapChain = m_pMainSwapChain.get();
     context.resources.pGBuffer = m_pGBuffer.get();
@@ -153,13 +154,15 @@ void CGraphicsEngine::Render(std::shared_ptr<CScene> pScene, std::shared_ptr<CGa
     m_pImGuiManager->NewFrame();
 
     // 뷰/투영 행렬 계산
-    DirectX::XMMATRIX viewMat, projMat;
-    {
-        std::lock_guard<std::mutex> camLock(CSceneManager::GetInstance().GetCameraMutex());
-        viewMat = CSceneManager::GetInstance().GetEditorCamera().GetViewMatrix();
-    }
+    DirectX::XMMATRIX viewMat = DirectX::XMMatrixIdentity();
+    DirectX::XMMATRIX projMat = DirectX::XMMatrixIdentity();
+    
     float aspectRatio = static_cast<float>(m_nWidth) / static_cast<float>(m_nHeight);
-    projMat = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 1000.0f);
+    if (pCamera)
+    {
+        viewMat = pCamera->GetViewMatrix();
+        projMat = pCamera->GetProjectionMatrix(aspectRatio);
+    }
 
     // 기즈모 및 그리드 업데이트
     m_pImGuiManager->UpdateGizmo(pSelectedObj.get(), viewMat, projMat, m_nWidth, m_nHeight);

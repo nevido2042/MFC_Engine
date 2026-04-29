@@ -35,14 +35,16 @@ void CMeshRenderer::Render(const RenderContext& context, int& objIndex)
         // 행렬 계산
         DirectX::XMMATRIX matWorld = pTransform->GetWorldMatrix();
         
-        DirectX::XMMATRIX matView;
-        {
-            std::lock_guard<std::mutex> camLock(CSceneManager::GetInstance().GetCameraMutex());
-            matView = CSceneManager::GetInstance().GetEditorCamera().GetViewMatrix();
-        }
+        DirectX::XMMATRIX matView = DirectX::XMMatrixIdentity();
+        DirectX::XMMATRIX matProj = DirectX::XMMatrixIdentity();
 
         float aspectRatio = static_cast<float>(context.nWidth) / static_cast<float>(context.nHeight);
-        DirectX::XMMATRIX matProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, aspectRatio, 0.1f, 1000.0f);
+
+        if (context.scene.pCamera)
+        {
+            matView = context.scene.pCamera->GetViewMatrix();
+            matProj = context.scene.pCamera->GetProjectionMatrix(aspectRatio);
+        }
 
         DirectX::XMMATRIX matWVP = matWorld * matView * matProj;
 

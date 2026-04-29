@@ -141,7 +141,7 @@ void CGameView::RenderLoop()
 			auto pScene = CSceneManager::GetInstance().GetActiveScene();
 			if (pScene)
 			{
-				m_pEngine->Render(pScene, nullptr);
+				m_pEngine->Render(pScene, nullptr, &CSceneManager::GetInstance().GetEditorCamera());
 			}
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
